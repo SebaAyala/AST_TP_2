@@ -18,7 +18,8 @@ AST_TP_2/
 ├── README.md                      # Este archivo
 ├── requirements.txt               # Dependencias de Python
 ├── time_series_analysis.py        # Script principal de análisis
-└── time_series_analysis.ipynb     # Notebook Jupyter para análisis interactivo
+├── time_series_analysis.ipynb     # Notebook Jupyter para análisis interactivo
+└── example.py                     # Ejemplo simple de uso
 ```
 
 ## Instalación
@@ -36,7 +37,15 @@ pip install -r requirements.txt
 
 ## Uso
 
-### Opción 1: Ejecutar el script de Python
+### Opción 1: Ejecutar el ejemplo simple
+
+Para un inicio rápido:
+
+```bash
+python example.py
+```
+
+### Opción 2: Ejecutar el script de Python completo
 
 Para ejecutar el análisis completo con datos de ejemplo:
 
@@ -52,7 +61,7 @@ Este script generará:
 - Análisis de distribuciones
 - Un archivo CSV con los datos: `time_series_data.csv`
 
-### Opción 2: Usar el Notebook Jupyter
+### Opción 3: Usar el Notebook Jupyter
 
 Para un análisis más interactivo:
 
@@ -66,7 +75,7 @@ El notebook permite:
 - Agregar análisis adicionales
 - Documentar tus hallazgos
 
-### Opción 3: Usar con tus propios datos
+### Opción 4: Usar con tus propios datos
 
 Puedes usar la clase `TimeSeriesAnalysis` con tus propios datos:
 
