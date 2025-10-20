@@ -1,0 +1,4528 @@
+---
+# ===============================================================
+# SECCIÓN 1: METADATOS PARA LA CARÁTULA Y EL DOCUMENTO
+# ===============================================================
+title: " "
+lang: "es"
+format:
+  pdf:
+    fig-cap-location: top   # (opcional) pone la leyenda debajo del gráfico
+    fig-cap: true              # habilita las leyendas
+    number-sections: true      # numera las secciones
+    number-figures: true       # <--- numera los gráficos automáticamente
+    
+    # Numeración de figuras y tablas por sección
+    crossref:
+      lof-title: "Listado de gráficos"
+      fig-prefix: "Gráfico"
+      tbl-prefix: "Tabla"
+      chapters: true
+    documentclass: article
+    toc: false
+    include-in-header:
+      text: |
+        \usepackage{float}
+        \usepackage{graphicx}
+        \raggedbottom
+editor: visual
+execute: 
+    echo: false
+    warning: false
+---
+
+```{=latex}
+\pagenumbering{gobble}
+\thispagestyle{empty}
+
+\begin{center}
+
+
+\includegraphics[width=0.5\textwidth]{logo-ua.png}
+
+\vspace{0.4cm}
+
+{\Large \textbf{Maestría en Ciencia de Datos}}\\
+Cohorte 2024-2025
+
+\vspace{0.8cm}
+
+{\Large \textbf{Análisis de Series Temporales}}
+
+\vspace{0.2cm}
+
+\textbf{Trabajo Práctico Nº 2}
+
+\vspace{0.6cm}
+
+{\large \textbf{Modelado y Pronóstico de Series Temporales Diarias de Temperatura, Precipitaciones y Siniestros Viales en CABA (2019–2023)}}
+
+\vspace{1cm}
+
+\textbf{Profesores:} \\
+Rodrigo Del Rosso \\
+Sebastián Calcagno \\
+Braian Drago
+
+\vspace{0.6cm}
+
+\textbf{Alumnos:} \\
+Sebastián Andres Ayala Sosa \\
+Adrian Jorge Della Valentina \\
+Gloria Molina Pico \\
+José Gabriel Roa Ramírez
+
+\vspace{0.6cm}
+
+\textbf{Fecha:} 19 de Octubre 2025
+
+\end{center}
+
+\newpage
+\pagestyle{plain}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+```
+
+# Resumen Ejecutivo {.unnumbered}
+
+El análisis de series temporales climáticas y de seguridad vial representa un estudio que consideramos útil y poderoso para comprender patrones, anticipar eventos y sustentar la toma de decisiones estratégicas en contextos de variabilidad ambiental y urbana.
+
+Este trabajo analiza tres series de tiempo diarias de Buenos Aires para el período 2019-2023: precipitaciones, temperatura media y cantidad de siniestros viales. El objetivo fue entender el comportamiento de cada serie, construir modelos de pronóstico avanzados utilizando técnicas de aprendizaje automático y deep learning, y finalmente, analizar cómo se relacionan entre sí.
+
+\newpage
+
+\tableofcontents
+
+\listoffigures
+
+\newpage
+
+# Introducción
+
+## Análisis de series de tiempo: Ciudad de Buenos Aires
+
+Para este análisis se seleccionaron tres series de tiempo relevantes para la Ciudad de Buenos Aires, entre los años 2019-2024:
+
+-   **Accidentes viales**
+-   **Temperaturas medias**
+-   **Precipitaciones registradas**
+
+La elección de estas series responde a la intención de explorar posibles relaciones entre variables climáticas y la cantidad de accidentes de tránsito, con el objetivo de comprender mejor los factores que inciden en la ocurrencia de estos eventos y, eventualmente, anticipar su frecuencia.
+
+## Motivos de elección
+
+-   **Accidentes viales**: Constituyen un fenómeno de alto impacto social y económico, que afecta tanto a personas como a empresas aseguradoras y al Estado. Su prevención es de gran interés para la gestión pública y la mejora de la seguridad ciudadana.
+
+-   **Temperaturas medias y precipitaciones**: Son variables meteorológicas que pueden influir directamente en las condiciones de circulación (visibilidad, adherencia, etc.) y en el comportamiento de los conductores, afectando potencialmente la siniestralidad vial.
+
+Situar el análisis en la Ciudad de Buenos Aires permite focalizar el estudio en una zona urbana con alta densidad de tránsito, infraestructura compleja y variabilidad climática, lo cual ofrece un entorno propicio para detectar patrones y relaciones entre las series.
+
+## Fuentes de datos
+
+Los **datos de siniestros viales** fueron descargados del portal oficial de datos abiertos del Gobierno de la Ciudad de Buenos Aires.
+
+Los **datos meteorológicos** (temperaturas medias y precipitaciones diarias) fueron provistos directamente por el **Servicio Meteorológico Nacional**, a través de un pedido realizado por correo electrónico.
+
+El propósito general de este análisis es identificar si existen asociaciones entre las condiciones climáticas y la frecuencia de los accidentes de tránsito, aportando evidencia útil para la toma de decisiones y el diseño de políticas públicas orientadas a la prevención y mitigación de riesgos.
+
+\newpage
+
+# Marco Teórico
+
+En esta sección se describen los modelos de aprendizaje automático y métodos estadísticos utilizados para el análisis y pronóstico de series temporales, así como las métricas empleadas para evaluar su desempeño.
+
+## Modelos de Series Temporales
+
+### XGBoost (Extreme Gradient Boosting)
+
+XGBoost es un algoritmo de aprendizaje supervisado basado en árboles de decisión que utiliza el método de gradient boosting (Chen & Guestrin, 2016). Su aplicación a series temporales requiere la transformación de los datos en un formato supervisado mediante la creación de características temporales (features) tales como rezagos (lags), medias móviles y variables calendario.
+
+**Características principales:**
+
+-   Optimización mediante descenso de gradiente para minimizar una función de pérdida
+-   Regularización L1 y L2 para prevenir sobreajuste
+-   Manejo eficiente de valores faltantes
+-   Capacidad para capturar relaciones no lineales complejas
+-   Paralelización del entrenamiento para mayor eficiencia computacional
+
+En el contexto de series temporales, XGBoost transforma el problema de predicción secuencial en un problema de regresión supervisada, donde las observaciones pasadas se utilizan como predictores de valores futuros (Brownlee, 2020).
+
+### TimesFM (Time Series Foundation Model)
+
+TimesFM es un modelo de fundación (foundation model) desarrollado por Google Research específicamente diseñado para pronóstico de series temporales (Das et al., 2024). Se trata de un modelo pre-entrenado en un corpus masivo de series temporales diversas, que puede ser utilizado sin necesidad de ajuste adicional (zero-shot forecasting) o con mínima adaptación.
+
+**Características principales:**
+
+-   Arquitectura basada en transformers adaptada para datos temporales
+-   Pre-entrenamiento en más de 100 mil millones de puntos de datos de series temporales
+-   Capacidad de generalización a series temporales no vistas durante el entrenamiento
+-   Manejo eficiente de diferentes frecuencias y horizontes de pronóstico
+-   No requiere especificación explícita de estacionalidad o tendencias
+
+El modelo utiliza técnicas de atención (attention mechanisms) para capturar dependencias temporales a diferentes escalas, lo que le permite adaptarse a patrones complejos sin necesidad de ingeniería manual de características (Das et al., 2024).
+
+### Chronos
+
+Chronos es una familia de modelos de fundación para pronóstico de series temporales desarrollados por Amazon (Ansari et al., 2024). Al igual que TimesFM, Chronos aprovecha el paradigma de pre-entrenamiento en grandes cantidades de datos para realizar predicciones sin ajuste específico.
+
+**Características principales:**
+
+-   Basado en arquitecturas de transformers tipo decoder-only
+-   Tokenización de valores de series temporales mediante cuantización
+-   Entrenamiento en un conjunto diverso de dominios (finanzas, energía, ventas, etc.)
+-   Múltiples tamaños de modelos (tiny, mini, small, base, large)
+-   Enfoque probabilístico que proporciona intervalos de predicción
+
+La tokenización de series temporales permite a Chronos tratar el pronóstico como un problema similar al modelado de lenguaje, aplicando técnicas exitosas de NLP al dominio temporal (Ansari et al., 2024).
+
+### AutoML (Automated Machine Learning)
+
+AutoML se refiere a la automatización del proceso completo de aplicación de aprendizaje automático a problemas del mundo real (Hutter et al., 2019). En el contexto de series temporales, AutoML automatiza la selección de modelos, la ingeniería de características, la optimización de hiperparámetros y la evaluación.
+
+**Características principales:**
+
+-   Búsqueda automática en el espacio de modelos (ARIMA, ETS, Prophet, ML, etc.)
+-   Optimización de hiperparámetros mediante técnicas como búsqueda bayesiana
+-   Validación cruzada temporal automática
+-   Ensamblado de múltiples modelos para mejorar robustez
+-   Detección automática de estacionalidad y tendencias
+
+Frameworks como Auto-sklearn, TPOT, H2O AutoML y AutoGluon implementan diferentes estrategias de AutoML, permitiendo obtener modelos competitivos sin necesidad de expertise profundo en cada algoritmo individual (Feurer et al., 2015).
+
+## Métricas de Evaluación
+
+La evaluación del desempeño de modelos de pronóstico requiere métricas que cuantifiquen la discrepancia entre los valores predichos y los valores reales. A continuación se describen las métricas utilizadas en este trabajo.
+
+### Error Cuadrático Medio (MSE)
+
+El Error Cuadrático Medio mide el promedio de los cuadrados de los errores de predicción:
+
+$$MSE = \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2$$
+
+donde $y_i$ representa el valor observado, $\hat{y}_i$ el valor predicho, y $n$ el número de observaciones.
+
+**Ventajas:** Penaliza fuertemente errores grandes debido a la elevación al cuadrado.
+
+**Desventajas:** No está en las mismas unidades que la variable original y es sensible a valores atípicos.
+
+### Raíz del Error Cuadrático Medio (RMSE)
+
+La RMSE es la raíz cuadrada del MSE, lo que permite interpretar el error en las mismas unidades que la variable original:
+
+$$RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}$$
+
+**Ventajas:** Interpretable en las unidades originales de la serie.
+
+**Desventajas:** Sensible a valores atípicos.
+
+### Error Absoluto Medio (MAE)
+
+El MAE calcula el promedio de los valores absolutos de los errores:
+
+$$MAE = \frac{1}{n}\sum_{i=1}^{n}|y_i - \hat{y}_i|$$
+
+**Ventajas:** Menos sensible a valores atípicos que MSE/RMSE, fácil interpretación.
+
+**Desventajas:** No penaliza errores grandes de manera tan fuerte como MSE.
+
+### Error Porcentual Absoluto Medio (MAPE)
+
+El MAPE expresa el error como un porcentaje del valor real:
+
+$$MAPE = \frac{100\%}{n}\sum_{i=1}^{n}\left|\frac{y_i - \hat{y}_i}{y_i}\right|$$
+
+**Ventajas:** Independiente de la escala de la variable, fácil interpretación.
+
+**Desventajas:** Indefinido cuando $y_i = 0$, asimétrico (penaliza más las sobre-predicciones que las sub-predicciones).
+
+### Error Absoluto Medio Escalado (MASE)
+
+Propuesto por Hyndman y Koehler (2006), el MASE compara el error del modelo con el error de un modelo naive estacional:
+
+$$MASE = \frac{MAE}{MAE_{naive}}$$
+
+**Ventajas:** Independiente de la escala, simétrico, definido para todos los valores.
+
+**Desventajas:** Requiere definir un modelo de referencia apropiado.
+
+La selección de la métrica apropiada depende de las características de la serie temporal y los objetivos del análisis. En este trabajo se utilizan múltiples métricas para obtener una evaluación comprensiva del desempeño de los modelos (Hyndman & Athanasopoulos, 2021).
+
+\newpage
+
+# Análisis de Resultados
+
+```{python}
+#| label: setup-notebook
+#| echo: false
+#| output: false
+# Importar las librerías necesarias
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings('ignore')
+
+# Configuración de visualización
+plt.style.use('tableau-colorblind10')
+color_pal = sns.color_palette()
+
+# Nota: Las celdas siguientes ejecutan código del notebook AST_TP_2_adri.ipynb
+```
+
+## Carga y Preparación de Datos
+
+Para este análisis se trabajó con tres datasets correspondientes al período 2019-2023 en la Ciudad de Buenos Aires:
+
+-   **Siniestros viales**: Cantidad diaria de eventos de tránsito
+-   **Precipitaciones**: Mediciones diarias en milímetros
+-   **Temperatura**: Temperatura media diaria en grados Celsius
+
+## Análisis Exploratorio de Datos
+
+### Serie Temporal de Siniestros
+
+### Tratamiento de Outliers
+
+Se identificaron y trataron outliers utilizando el método del rango intercuartílico (IQR). Los valores atípicos fueron ajustados al límite superior del rango considerado normal.
+
+### División Train/Test
+
+Se utilizó una división 80/20 para entrenamiento y evaluación de modelos.
+
+## Modelado y Pronóstico
+
+### Ingeniería de Características
+
+Para aplicar modelos de machine learning tradicionales como XGBoost, se crearon características temporales a partir del índice de tiempo:
+
+### Resultados de Modelos
+
+A continuación se presentan los resultados obtenidos con diferentes modelos de pronóstico. Los modelos fueron entrenados utilizando el conjunto de entrenamiento y evaluados en el conjunto de prueba.
+
+**Nota**: Los detalles completos de implementación, optimización de hiperparámetros y análisis adicionales se encuentran en el notebook `AST_TP_2_adri.ipynb`.
+
+## Comparación Visual de Modelos
+
+Las siguientes figuras muestran las predicciones de los modelos comparadas con los valores reales del conjunto de prueba.
+
+**Nota**: Para generar estas visualizaciones, ejecute previamente el notebook `AST_TP_2_adri.ipynb` que contiene el código completo de entrenamiento y predicción.
+
+## Validación de Resultados
+
+### Análisis de Desempeño
+
+Los resultados muestran que:
+
+1.  **Prophet Optimizado** logró el mejor desempeño con MAE de 5.21, beneficiándose de la optimización de hiperparámetros con Optuna.
+
+2.  **XGBoost Optimizado** mostró una mejora significativa respecto a la versión base, reduciendo el MAE de 5.86 a 5.34.
+
+3.  Los **modelos de fundación** (TimesFM y Chronos) lograron resultados competitivos sin necesidad de ingeniería de características ni optimización, aunque no superaron a los modelos tradicionales optimizados.
+
+4.  La naturaleza **irregular y con alta variabilidad** de la serie de siniestros representa un desafío para todos los modelos de pronóstico.
+
+### Limitaciones
+
+-   Los modelos asumen que los patrones históricos se mantendrán en el futuro
+-   No se incorporaron variables exógenas (clima, eventos especiales, etc.)
+-   La evaluación se realizó en un único conjunto de prueba
+
+```{python}
+#| include: false
+!pip install skforecast session_info
+!pip install -e ./timesfm -q
+!git clone https://github.com/google-research/timesfm.git
+!pip install chronos-forecasting==1.5.3
+# Instalación de la librería AutoTS
+!pip install AutoTS -q
+%pip install optuna
+```
+
+```{python}
+#| include: false
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+import xgboost as xgb
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import TimeSeriesSplit
+from xgboost import plot_importance, plot_tree
+color_pal = sns.color_palette()
+plt.style.use('tableau-colorblind10')
+
+from google.colab import drive
+from google.colab import auth
+from google.auth import default
+
+
+import torch
+from chronos import ChronosPipeline
+
+from sklearn.preprocessing import StandardScaler
+
+import optuna
+
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+
+from xgboost import XGBRegressor
+from lightgbm import LGBMRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.pipeline import make_pipeline
+from sklearn.compose import make_column_transformer
+from sklearn.compose import make_column_selector
+from skforecast.recursive import ForecasterRecursive
+
+from skforecast.model_selection import TimeSeriesFold
+from skforecast.model_selection import grid_search_forecaster
+from skforecast.model_selection import bayesian_search_forecaster
+from skforecast.model_selection import backtesting_forecaster
+import warnings
+warnings.filterwarnings("ignore")
+
+
+from statsmodels.graphics.tsaplots import plot_acf
+from statsmodels.graphics.tsaplots import plot_pacf
+import plotly.graph_objects as go
+import plotly.express as px
+import plotly.io as pio
+
+# Importaciones necesarias
+import math
+import seaborn as sns
+from autots import AutoTS
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+```
+
+```{python}
+#| label: carga-datasets-1
+#| warning: false
+#| include: false
+import os
+
+# Obtener el directorio de trabajo actual
+current_dir = os.getcwd()
+
+# Construir las rutas relativas a los archivos
+siniestros_path = os.path.join(current_dir, 'siniestros.csv')
+
+# Cargar los datasets
+df_siniestros = pd.read_csv(siniestros_path, encoding='latin1', sep=';')
+
+# Convertir fecha a datetime
+#df_siniestros['fecha'] = pd.to_datetime(df_siniestros['fecha'], errors='coerce')
+
+# Agrupar por fecha para obtener cantidad de eventos diarios
+#df_siniestros = df_siniestros.groupby('fecha').size().reset_index(name='cantidad_eventos')
+#df_siniestros.set_index('fecha', inplace=True)
+
+precipitaciones_path = os.path.join(current_dir, 'precip.xlsx')
+df_precipitaciones = pd.read_excel(precipitaciones_path, skiprows=3)
+
+temperatura_path = os.path.join(current_dir, 'tempBA.xlsx')
+df_temperatura = pd.read_excel(temperatura_path, skiprows=2, date_parser=['Fecha'])
+
+SEED = 1910
+np.random.seed(SEED)
+```
+
+```{python}
+#| label: autots_results_summary
+#| include: false
+autots_results_summary = {}
+```
+
+```{python}
+#| label: head_series
+#| include: false
+print(df_siniestros.head())
+print(df_precipitaciones.head())
+print(df_temperatura.head())
+```
+
+```{python}
+#| label: infor_datasets
+#| include: false
+lista_datasets = [df_siniestros, df_precipitaciones, df_temperatura]
+for i in lista_datasets:
+  print(i.info())
+```
+
+```{python}
+#| label: df_siniestros_cambio_fecha
+#| include: false
+df_siniestros['fecha'] = pd.to_datetime(df_siniestros['fecha'],  errors='coerce')
+df_siniestros.head()
+```
+
+```{python}
+#| label: agrupacion_df_siniestros
+#| include: false
+df_siniestros = df_siniestros.groupby('fecha').size().reset_index(name='cantidad_eventos')
+# df_siniestros.set_index('fecha', inplace=True)
+df_siniestros.head()
+```
+
+```{python}
+#| label: set_index_df_siniestros
+#| include: false
+df_siniestros.set_index('fecha', inplace=True)
+df_siniestros.head()
+```
+
+# Siniestros
+
+En una primera aproximación realizamos un diagrama de dispersión de los datos de accidentes viales en CABA
+
+```{python}
+#| label: fig-plot_siniestros_1
+#| echo: false
+df_siniestros.plot(style='.',
+        figsize=(15, 5),
+        color=color_pal[1],
+        title='Siniestros')
+plt.show()
+```
+
+```{python}
+#| label: nan_df_siniestros
+#| include: false
+print('Cantidad de NaNs:')
+for column in df_siniestros:
+    nans = df_siniestros[column].isna().sum()
+    print(f'\tColumna {column}: {nans}')
+```
+
+Para identificar outliers se realizó un histograma para graficar la cantidad de siniestros.
+
+```{python}
+#| label: fig-histograma_cantidad_eventos
+#| echo: false
+df_siniestros['cantidad_eventos'].plot(kind='hist', bins=500);
+```
+
+```{python}
+#| label: fig-outliers_siniestros
+#| echo: false
+Q1 = df_siniestros['cantidad_eventos'].quantile(0.25)
+Q3 = df_siniestros['cantidad_eventos'].quantile(0.75)
+IQR = Q3 - Q1
+
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+outliers = df_siniestros[(df_siniestros['cantidad_eventos'] < lower_bound) | (df_siniestros['cantidad_eventos'] > upper_bound)]
+
+print("Outliers based on IQR:")
+display(outliers)
+
+outliers['cantidad_eventos'].plot(style='.',
+        figsize=(15, 5),
+        color=color_pal[5],
+        title='Outliers in cantidad_eventos')
+plt.show()
+```
+
+Al haber 3 outliers, se decidió modificar esos valores por el valor 53, de manera de eliminar los mismos del dataset. Este fue el la solución que ideamos cuando nos enfrentamos a esta situación. A continuación se gráfica el diagrama de dispersión, sin outliers.
+
+```{python}
+#| label: modif_outliers
+#| include: false
+#Lo que hago es modificar los outliers por el valor 53, que es el valor menor a que se considere outlier
+condicion = (df_siniestros['cantidad_eventos'] < lower_bound) | (df_siniestros['cantidad_eventos'] > upper_bound)
+df_siniestros.loc[condicion, 'cantidad_eventos'] = 53
+```
+
+```{python}
+#| label: fig-plot_siniestros_sin_outliers
+#| echo: false
+df_siniestros.plot(style='.',
+        figsize=(15, 5),
+        color=color_pal[1],
+        title='Siniestros')
+plt.show()
+```
+
+Posteriormente realizmos la división entre test y train de los datos, en una proporción 80/20, 80% de los datos para entrenar y 20% de los datos para testear el modelo.
+
+```{python}
+#| label: fig-split_train_test_siniestros_1
+#| echo: false
+split_index = int(len(df_siniestros) * 0.8)
+train_siniestros = df_siniestros.iloc[:split_index]
+test_siniestros = df_siniestros.iloc[split_index:]
+
+fig, ax = plt.subplots(figsize=(15, 5))
+train_siniestros.plot(ax=ax, label='Training Set', title='Data Train/Test Split')
+test_siniestros.plot(ax=ax, label='Test Set')
+ax.axvline(test_siniestros.index[0], color='black', ls='--')
+ax.legend(['Training Set', 'Test Set'])
+plt.show()
+```
+
+```{python}
+#| label: cross_validatios_siniestros
+#| include: false
+tss_siniestros = TimeSeriesSplit(n_splits=5, test_size=1*200*1, gap=1) 
+#se están dejando 24 hrs como brecha entre el conjunto de entrenamiento y el #conjunto de prueba. (mayor representatividad)
+df_siniestros_cv = df_siniestros.sort_index()
+```
+
+Posteriormente creamos un objeto de tipo TimeSeriesSplit que se utiliza para dividir una serie temporal en conjuntos de entrenamiento y prueba para su validación cruzada. n_splits=5: Indica que se dividirá la serie temporal en 5 conjuntos diferentes.
+
+```{python}
+#| label: fig-plot_train_test_siniestros
+#| echo: false
+fig, axs = plt.subplots(5, 1, figsize=(15, 15), sharex=True)
+
+fold = 0
+for train_idx, val_idx in tss_siniestros.split(df_siniestros_cv):
+    train = df_siniestros_cv.iloc[train_idx]
+    val = df_siniestros_cv.iloc[val_idx]
+    train['cantidad_eventos'].plot(ax=axs[fold],
+                          label='Training Set',
+                          title=f'Data Train/Test Split Fold {fold}')
+    val['cantidad_eventos'].plot(ax=axs[fold],label='Val Set')
+    axs[fold].axvline(val.index.min(), color='black', ls='--')
+    fold += 1
+plt.show()
+```
+
+```{python}
+#| label: tss_siniestros
+#| include: false
+tss_siniestros
+```
+
+```{python}
+#| label: folds_tss_siniestros
+#| include: false
+for i, (train_index, test_index) in enumerate(tss_siniestros.split(df_siniestros_cv)):
+     print(f"Fold {i}:")
+     print(f"  Train: index={train_index}")
+     print(f"  Test:  index={test_index}")
+```
+
+Para poder mejorar el modelo, y probar si mejora su calidad de predicción, se decidió incorporar variables, basadas en los indices de tiempo y en los lags. Las mismas se muestran en el siguiente cuadro:
+
+```{python}
+#| label: function_create_features_siniestros
+#| include: false
+def create_features(df):
+    """
+    Creamos features basadas en el índice tiempo.
+    """
+    df = df.copy()
+    df['hour'] = df.index.hour
+    df['dayofweek'] = df.index.dayofweek
+    df['quarter'] = df.index.quarter
+    df['month'] = df.index.month
+    df['year'] = df.index.year
+    df['dayofyear'] = df.index.dayofyear
+    df['dayofmonth'] = df.index.day
+    df['weekofyear'] = df.index.isocalendar().week
+    return df
+```
+
+```{python}
+#| label: creacion_features_cv_siniestros
+#| include: false
+df_siniestros_cv = create_features(df_siniestros_cv)
+```
+
+```{python}
+#| label: def_lags_siniestros
+#| include: false
+def add_lags(df):
+    target_map = df['cantidad_eventos'].to_dict()
+    df['lag1'] = (df.index - pd.Timedelta('364 days')).map(target_map)
+    df['lag2'] = (df.index - pd.Timedelta('728 days')).map(target_map)
+    df['lag3'] = (df.index - pd.Timedelta('1092 days')).map(target_map)
+    return df
+```
+
+```{python}
+#| label: siniestros_cv_apply_lags
+#| include: false
+df_siniestros_cv = add_lags(df_siniestros_cv)
+```
+
+```{python}
+#| label: tabla_siniestros_colwidths
+#| echo: false
+df_siniestros_cv.head(3)
+```
+
+```{python}
+#| include: false
+tss_siniestros_2 = TimeSeriesSplit(n_splits=5, test_size=200, gap=1)
+df_siniestros_cv = df_siniestros_cv.sort_index()
+```
+
+```{python}
+#| include: false
+fold = 0
+preds = [] #Almacena las predicciones de cada partición
+scores = [] #Guarda el RMSE de cada partición
+for train_idx, val_idx in tss_siniestros_2.split(df_siniestros_cv): #Iterar sobre las particiones
+    train = df_siniestros_cv.iloc[train_idx]
+    val = df_siniestros_cv.iloc[val_idx]
+
+    #train = create_features(train)
+    #val = create_features(val)
+
+    FEATURES = ['dayofyear', 'hour', 'dayofweek', 'quarter', 'month','year',
+                'lag1','lag2','lag3'] #Extraer características y target
+    TARGET = 'cantidad_eventos'
+
+    X_train = train[FEATURES]
+    y_train = train[TARGET]
+
+    X_val = val[FEATURES]
+    y_val = val[TARGET]
+
+    reg = xgb.XGBRegressor(booster='gbtree', #utilizar modelado basado en árboles
+                           n_estimators=1000, #n_estimators – Número de árboles que llevan a cabo el boosting. También se entiende como el número de iteraciones de boosting.
+                           objective='reg:linear', #Aquí es donde se indica si queremos hacer regresión
+                           max_depth=3, #Máxima profundidad de un arbol.
+                           learning_rate=0.01,
+                           random_state=1910,
+                           eval_metric=['rmse', 'mae'] )
+    reg.fit(X_train, y_train,
+            eval_set=[(X_train, y_train), (X_val, y_val)],
+            verbose=100)
+
+    y_pred = reg.predict(X_val)
+    preds.append(y_pred)
+    score = np.sqrt(mean_squared_error(y_val, y_pred))
+    scores.append(score)
+```
+
+```{python}
+#| echo: false
+print(f'Score across folds {np.mean(scores):0.4f}')
+print(f'Fold scores:{scores}')
+```
+
+A continuación se grafican las curvas de aprendizaje y una gráfico que expresa la importancia de las features.
+
+```{python}
+#| label: fig-curva_aprendizaje_1l
+#| echo: false
+# Plot the training and validation history
+results = reg.evals_result()
+train_error = results['validation_0']['rmse']
+val_error = results['validation_1']['rmse']
+
+epoch = range(1, len(train_error) + 1)
+
+plt.plot(epoch, train_error, label='Train')
+plt.plot(epoch, val_error, label='Validation')
+plt.xlabel('Number of Boosting Rounds')
+plt.ylabel('Root Mean Squared Error (RMSE)')
+plt.title('Training and Validation History')
+plt.legend()
+plt.show()
+```
+
+```{python}
+#| label: fig-feature_importance7y
+#| echo: false
+_ = plot_importance(reg, height=0.9)
+```
+
+```{python}
+#| include: false
+y_pred = reg.predict(X_val)
+```
+
+```{python}
+#| include: false
+y_pred
+```
+
+```{python}
+#| include: false
+val['prediction'] = reg.predict(X_val)
+val['prediction']
+val
+```
+
+Luego de entrenar el modelo se grafican las predicciones del mismo, y a comparación del trabajo práctico anterior el modelo es mucho mejor. Observamos además, que el modelo puede captar las disminuciones en los siniestros pero no así los picos de los mismos.
+
+```{python}
+#| label: fig-pred_sin_7m
+#| echo: false
+ax = val.loc[(val.index >= '2017-08-03')]['cantidad_eventos'].plot(figsize=(15, 5), title='Week Of Data')
+val.loc[(val.index >= '2017-08-03')]['prediction'].plot()
+plt.legend(['Truth Data','Prediction'])
+plt.show()
+```
+
+```{python}
+#| include: false
+from math import sqrt
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import r2_score
+
+# Calculate error metrics using the filtered data
+mse = mean_squared_error(y_val, y_pred)
+mae = mean_absolute_error(y_val, y_pred)
+score = np.sqrt(mean_squared_error(y_val, y_pred))
+```
+
+Metricas de evaluación:
+
+```{python}
+#| echo: false
+# Print the error metrics
+print("Mean Squared Error (MSE):", mse)
+print("Mean Absolute Error (MAE):", mae)
+print(f'RMSE Score on Test set: {score:0.2f}')
+```
+
+En nuestro afán de poder encontrar mejores modelos, entrenamos un modelo XGBoost optimizando sus hiperparámetros el código del mismo se encuentra en el cuaderno de Colab donde realizamos el codigo del presente trabajo y a continuación se grafican las curvas de aprendizaje y la importancia de las features.
+
+```{python}
+#| include: false
+from sklearn.model_selection import TimeSeriesSplit
+from sklearn.metrics import mean_squared_error
+import numpy as np
+import xgboost as xgb
+import optuna
+import matplotlib.pyplot as plt
+import random
+random.seed(SEED)
+
+def objective(trial):
+    """Objective function for Optuna."""
+    params = {
+        'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+        'max_depth': trial.suggest_int('max_depth', 3, 10),
+        'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.1),
+        'subsample': trial.suggest_float('subsample', 0.6, 1.0),
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
+        'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 1.0, log=True),
+        'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 1.0, log=True),
+        'objective': 'reg:squarederror',
+        'eval_metric': 'rmse',
+        'random_state': 42,
+        'seed': SEED,
+        'n_jobs': -1
+    }
+
+    tss = TimeSeriesSplit(n_splits=5, test_size=50, gap=1)
+    rmse_scores = []
+
+    df_processed = create_features(df_siniestros_cv.copy()) # Apply feature engineering
+    df_processed = add_lags(df_processed) # Apply lag features
+    df_processed.dropna(inplace=True) # Drop rows with NaN values from lags
+
+
+    FEATURES = ['dayofyear', 'hour', 'dayofweek', 'quarter', 'month','year',
+                'lag1','lag2','lag3'] # Update feature names
+    TARGET = 'cantidad_eventos'
+
+    X = df_processed[FEATURES]
+    y = df_processed[TARGET]
+
+    models = []  # Store trained models to get eval_results later
+
+    for train_idx, val_idx in tss.split(X):
+        X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+        y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+
+        reg = xgb.XGBRegressor(**params)
+
+        eval_set = [(X_train, y_train), (X_val, y_val)]
+
+        reg.fit(X_train, y_train,
+                eval_set=eval_set,
+                verbose=False)
+
+        models.append(reg)  # Store the trained model
+
+        y_pred = reg.predict(X_val)
+        rmse = np.sqrt(mean_squared_error(y_val, y_pred))
+        rmse_scores.append(rmse)
+
+    # Store the evaluation results for the last fold of this trial
+    trial.set_user_attr('eval_results', models[-1].evals_result())
+
+    return np.mean(rmse_scores)
+
+
+sampler = optuna.samplers.TPESampler(seed=SEED)
+study = optuna.create_study(direction='minimize', sampler=sampler)
+study.optimize(objective, n_trials=5)
+
+print("Best hyperparameters: ", study.best_params)
+print("Best RMSE: ", study.best_value)
+
+# Plot the training and validation history for the best trial
+best_trial = study.best_trial
+results = best_trial.user_attrs['eval_results']
+train_error = results['validation_0']['rmse']
+val_error = results['validation_1']['rmse']
+
+epoch = range(1, len(train_error) + 1)
+
+plt.plot(epoch, train_error, label='Train')
+plt.plot(epoch, val_error, label='Validation')
+plt.xlabel('Number of Boosting Rounds')
+plt.ylabel('Root Mean Squared Error (RMSE)')
+plt.title('Training and Validation History for Best Optuna Trial')
+plt.legend()
+plt.show()
+```
+
+```{python}
+#| label: fig-boost3o
+#| echo: false
+plt.plot(epoch, train_error, label='Train')
+plt.plot(epoch, val_error, label='Validation')
+plt.xlabel('Number of Boosting Rounds')
+plt.ylabel('Root Mean Squared Error (RMSE)')
+plt.title('Training and Validation History for Best Optuna Trial')
+plt.legend()
+plt.show()
+```
+
+```{python}
+#| include: false
+# Define features and target
+FEATURES = ['dayofyear', 'hour', 'dayofweek', 'quarter', 'month','year',
+            'lag1','lag2','lag3']
+TARGET = 'cantidad_eventos'
+
+# Apply feature engineering and lag features to the full DataFrame
+df_processed = create_features(df_siniestros_cv.copy())
+df_processed = add_lags(df_processed)
+df_processed.dropna(inplace=True) # Drop rows with NaN values from lags
+
+# Split data into training and testing sets using the original split point
+train_cutoff = '01-07-2023'
+X_train_final = df_processed.loc[df_processed.index < train_cutoff, FEATURES]
+y_train_final = df_processed.loc[df_processed.index < train_cutoff, TARGET]
+X_test_final = df_processed.loc[df_processed.index >= train_cutoff, FEATURES]
+y_test_final = df_processed.loc[df_processed.index >= train_cutoff, TARGET]
+
+# Initialize XGBoost model with best hyperparameters from Optuna
+best_params = study.best_params
+final_reg = xgb.XGBRegressor(**best_params,
+                             objective='reg:squarederror',
+                             eval_metric='rmse',
+                             random_state=42,
+                             n_jobs=-1)
+
+# Train the final model on the full training set
+final_reg.fit(X_train_final, y_train_final)
+```
+
+Métricas del modelo:
+
+```{python}
+#| echo: false
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+
+# Make predictions on the test set
+y_pred_final = final_reg.predict(X_test_final)
+
+# Calculate RMSE on the test set
+rmse_final_xg = np.sqrt(mean_squared_error(y_test_final, y_pred_final))
+
+# Calculate MAE on the test set
+mae_final_xg = mean_absolute_error(y_test_final, y_pred_final)
+
+# Print the evaluation metrics
+print(f"Final Model RMSE on Test Set: {rmse_final_xg:0.2f}")
+print(f"Final Model MAE on Test Set: {mae_final_xg:0.2f}")
+```
+
+Gráfico del modelo XGBoost optimizado, junto con el gráfico de feature importance:
+
+```{python}
+#| label: fig-pred_j7
+#| echo: false
+import matplotlib.pyplot as plt
+import xgboost as xgb
+from xgboost import plot_importance
+
+# 1. Create a new DataFrame called test_results from the X_test_final DataFrame
+test_results = X_test_final.copy()
+test_results['Actual'] = y_test_final
+test_results['Prediction'] = y_pred_final
+
+# 2. Plot the 'Actual' and 'Prediction' columns of the test_results DataFrame
+plt.figure(figsize=(15, 5))
+test_results['Actual'].plot(label='Actual')
+test_results['Prediction'].plot(label='Prediction')
+plt.title('Cantidad de eventos - Modelo XGBoost')
+
+# 3. Add a legend to the plot to distinguish between the 'Actual' and 'Prediction' lines.
+plt.legend()
+
+# 4. Display the plot.
+plt.show()
+
+# 5. Generate a plot showing the importance of the features in the final_reg model
+plot_importance(final_reg, height=0.9)
+
+# 6. Display the feature importance plot.
+plt.show()
+```
+
+El modelo XGBoost, tras un proceso de optimización, demostró un rendimiento muy sólido. Se obtuvo un Error Absoluto Medio (MAE) de \`{python} mae_final_xg\`. El RMSE fue de \`{python} rmse_final_xg\`, indicando que el modelo, si bien es preciso, tuvo mayores dificultades en días con picos de siniestros.
+
+El gráfico de importancia de características revela que el modelo aprendió a predecir basándose principalmente en el patrón estacional anual (dayofyear) y la información de años anteriores (lags). También capturó eficazmente el ciclo semanal (dayofweek).
+
+La predicción sigue de cerca el patrón general de los datos reales, aunque suaviza los picos más extremos de accidentes.
+
+## Times FM
+
+A partir de los nuevos modelos para realizar forecasting de series de tiempo decidimos realizar una prueba con esto modelo para todas las series elegidas.
+
+```{python}
+#| echo: false
+# 2. Importaciones y carga del modelo
+import timesfm
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Cargar el modelo pre-entrenado
+model = timesfm.TimesFM_2p5_200M_torch.from_pretrained("google/timesfm-2.5-200m-pytorch")
+
+# Configurar el modelo para la inferencia
+# max_context es la cantidad de datos pasados que usará para predecir.
+# max_horizon es la cantidad máxima de pasos futuros que puede predecir.
+model.compile(
+    timesfm.ForecastConfig(
+        max_context=1024,
+        max_horizon=512,
+        normalize_inputs=True,
+        use_continuous_quantile_head=True,
+        force_flip_invariance=True,
+        infer_is_positive=True, # Importante para siniestros, que no pueden ser negativos
+        fix_quantile_crossing=True,
+    )
+)
+```
+
+```{python}
+#| include: false
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import datetime
+```
+
+```{python}
+#| include: false
+# 3. Preparación de tus datos
+HORIZON = 30 # Tu horizonte de predicción
+
+# Asumimos que df_siniestros ya está cargado y es un DataFrame de pandas
+# con un índice de fecha y una columna con los valores de los siniestros.
+# Por ejemplo: df_siniestros['cantidad_siniestros']
+
+data_siniestros_TFM = df_siniestros.copy()
+split_index = int(len(data_siniestros_TFM) * 0.8)
+train_siniestros_TFM = data_siniestros_TFM[:split_index]
+test_siniestros_TFM = data_siniestros_TFM[split_index:]
+# --- ADAPTACIÓN CLAVE ---
+# El modelo necesita los últimos `max_context` (1024) puntos del set de entrenamiento
+# para predecir el futuro.
+contexto_para_predecir = train_siniestros_TFM['cantidad_eventos'][-1024:].to_numpy()
+
+# El modelo espera un formato específico: (batch_size, num_timesteps).
+# En nuestro caso, el batch_size es 1.
+inputs_del_modelo = contexto_para_predecir.reshape(1, -1)
+
+print(f"Forma de los datos de entrada para el modelo: {inputs_del_modelo.shape}")
+```
+
+```{python}
+#| include: false
+# 4. Generar la predicción
+# Le pasamos el contexto que preparamos y el horizonte que definimos.
+point_forecast, quantile_forecast = model.forecast(
+    horizon=HORIZON,
+    inputs=inputs_del_modelo
+)
+
+# El resultado 'point_forecast' es un array de numpy.
+# Extraemos la primera (y única) predicción.
+prediccion_siniestros = point_forecast[0]
+
+print(f"Se generaron {len(prediccion_siniestros)} predicciones para los próximos {HORIZON} días.")
+```
+
+Gráfico de la predicción utilizando Times FM
+
+```{python}
+#| label: fig-times_fm_1q
+#| echo: false
+# 5. Visualizar y comparar
+# Creamos un DataFrame para facilitar la comparación
+df_resultados = pd.DataFrame({
+    'Reales': test_siniestros_TFM['cantidad_eventos'].iloc[:HORIZON].values,
+    'Predichos': prediccion_siniestros
+}, index=test_siniestros_TFM.index[:HORIZON])
+
+
+# Graficamos los resultados
+fig, ax = plt.subplots(figsize=(14, 7), dpi=120)
+
+# Datos de entrenamiento (mostramos una parte para dar contexto)
+ax.plot(train_siniestros_TFM.index[-200:], train_siniestros_TFM['cantidad_eventos'][-200:],
+        ls=':', lw=1, color='#b8b0ac', label='Datos de Entrenamiento (Contexto)')
+
+# Datos reales del período de prueba
+ax.plot(df_resultados.index, df_resultados['Reales'],
+        ls='--', lw=2, color='#5778a4', label=f'Siniestros Reales (Test)')
+
+# Predicciones del modelo
+ax.plot(df_resultados.index, df_resultados['Predichos'],
+        ls='-', lw=2, color='#e49444', label='Predicción TimesFM')
+
+# Línea vertical para marcar el inicio de la predicción
+ax.axvline(train_siniestros_TFM.index[-1], ls='--', lw=1, color='#85b6b2', label='Inicio de Predicción')
+
+ax.legend(frameon=False, ncols=4, loc='upper center', bbox_to_anchor=(0.5, 1.1))
+ax.grid(alpha=0.25)
+ax.set_title(f"Predicción de Siniestros con TimesFM (Horizonte: {HORIZON} días)", y=1.08)
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+plt.show()
+```
+
+Valores de sus métricas:
+
+```{python}
+#| echo: false
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
+
+def calcular_metricas_error(y_true, y_pred):
+    """
+    Calcula el Error Absoluto Medio (MAE) y la Raíz del Error Cuadrático Medio (RMSE).
+
+    Args:
+        y_true (array-like): Valores reales u observados.
+        y_pred (array-like): Valores predichos por el modelo.
+
+    Returns:
+        dict: Un diccionario con los valores de 'MAE' y 'RMSE'.
+    """
+    # Corregimos los nombres a los estándares en inglés para usar las librerías
+    # MAE (Mean Absolute Error) = EMA (Error Medio Absoluto)
+    mae = mean_absolute_error(y_true, y_pred)
+
+    # RMSE (Root Mean Squared Error) = RSME
+    # Se calcula la raíz cuadrada del Error Cuadrático Medio (MSE)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+
+    return {'MAE': mae, 'RMSE': rmse}
+
+# --- Ejemplo de uso con tu DataFrame 'df_results' ---
+
+# Suponiendo que 'df_results' ya fue creado en el paso anterior
+# Contiene las columnas 'Reales' y 'Predichos'
+metricas = calcular_metricas_error(df_resultados['Reales'], df_resultados['Predichos'])
+
+print(f"Resultados de las métricas de error:")
+print(f"Error Absoluto Medio (MAE): {metricas['MAE']:.2f}")
+print(f"Raíz del Error Cuadrático Medio (RMSE): {metricas['RMSE']:.2f}")
+```
+
+Este modelo, uno de los más avanzados, obtuvo un buen resultado:
+
+Error Absoluto Medio (MAE): 3.69
+
+Raíz del Error Cuadrático Medio (RMSE): 4.92
+
+Con un MAE de 3.69, TimesFM superó con claridad el rendimiento de XGBoost (MAE 6.15), reduciendo el error de predicción casi a la mitad.
+
+El gráfico Predicción de Siniestros es muy revelador y explica cómo el modelo logra este resultado. A diferencia de XGBoost, la predicción de TimesFM (línea naranja) es extremadamente regular. No intenta capturar el ruido o las fluctuaciones diarias de los datos reales.
+
+En su lugar, el modelo identificó el patrón subyacente más fuerte, el ciclo semanal (picos a mitad de semana y valles los fines de semana). Esta estrategia de ignorar el ruido y predecir la tendencia principal es muy efectiva y la razón por la que su error promedio (MAE) es tan bajo.
+
+## Times FM_2
+
+Luego entrenamos otro modelo Times, agegando features.
+
+```{python}
+#| include: false
+from sklearn.preprocessing import StandardScaler
+# Configurar el modelo para la inferencia
+model.compile(
+    timesfm.ForecastConfig(
+        max_context=1024,
+        max_horizon=512,
+        normalize_inputs=True,
+        use_continuous_quantile_head=True,
+        force_flip_invariance=True,
+        infer_is_positive=True,
+        fix_quantile_crossing=True,
+    )
+)
+
+# ==============================================================================
+# PASO 2: PREPARACIÓN DE DATOS Y FEATURE ENGINEERING
+# ==============================================================================
+# --- Asegúrate de que tu DataFrame 'df_siniestros' esté cargado aquí ---
+# Por ejemplo:
+# df_siniestros = pd.read_csv('tus_datos.csv', parse_dates=['fecha'], index_col='fecha')
+
+
+# Definir la columna objetivo y el horizonte
+TARGET_COLUMN = 'cantidad_eventos'
+HORIZON = 30
+CONTEXT_WINDOW = 365 # Puedes experimentar cambiando este valor (ej. 365)
+
+# Crear características basadas en la fecha
+# Es crucial que el índice de tu DataFrame sea de tipo DatetimeIndex
+df_siniestros_featured = df_siniestros.copy()
+df_siniestros_featured['dia_de_semana'] = df_siniestros_featured.index.dayofweek
+df_siniestros_featured['dia_del_mes'] = df_siniestros_featured.index.day
+df_siniestros_featured['mes'] = df_siniestros_featured.index.month
+
+# Normalizar las nuevas características
+scaler = StandardScaler()
+features_to_scale = ['dia_de_semana', 'dia_del_mes', 'mes']
+df_siniestros_featured[features_to_scale] = scaler.fit_transform(
+    df_siniestros_featured[features_to_scale]
+)
+
+# Dividir en datos de entrenamiento y prueba
+split_index = int(len(df_siniestros_featured) * 0.8)
+train_data = df_siniestros_featured[:split_index]
+test_data = df_siniestros_featured[split_index:]
+
+# ==============================================================================
+# PASO 3: PREPARAR INPUTS PARA EL MODELO
+# ==============================================================================
+# Definir las columnas que usaremos, con la objetivo SIEMPRE PRIMERO
+feature_columns = [TARGET_COLUMN] + features_to_scale
+
+# Extraer el contexto del final del set de entrenamiento
+context_data = train_data[feature_columns][-CONTEXT_WINDOW:].to_numpy()
+
+# Transponer para obtener la forma correcta: (num_features, context_length)
+model_inputs = context_data.T
+
+print(f"Forma de los datos de entrada para el modelo: {model_inputs.shape}")
+
+# ==============================================================================
+# PASO 4: REALIZAR LA PREDICCIÓN
+# ==============================================================================
+point_forecast, quantile_forecast = model.forecast(
+    horizon=HORIZON,
+    inputs=model_inputs
+)
+
+# Extraer la predicción principal y los cuantiles para el intervalo de confianza
+predicted_values = point_forecast[0]
+q10 = quantile_forecast[0, :, 1] # Cuantil 10
+q90 = quantile_forecast[0, :, 8] # Cuantil 90
+
+print(f"Se generaron {len(predicted_values)} predicciones para los próximos {HORIZON} días.")
+
+# ==============================================================================
+# PASO 5: VISUALIZACIÓN DE RESULTADOS
+# ==============================================================================
+# Crear un DataFrame para facilitar la comparación
+df_results = pd.DataFrame({
+    'Reales': test_data[TARGET_COLUMN].iloc[:HORIZON].values,
+    'Predichos': predicted_values,
+    'Cuantil_10': q10,
+    'Cuantil_90': q90
+}, index=test_data.index[:HORIZON])
+```
+
+Gráfico Times FM_2
+
+```{python}
+#| label: fig-timesfm_2r
+#| echo: false
+# Graficar los resultados
+fig, ax = plt.subplots(figsize=(15, 8), dpi=120)
+
+# 1. Datos de entrenamiento (últimos 200 puntos como contexto)
+ax.plot(train_data.index[-200:], train_data[TARGET_COLUMN][-200:],
+        ls=':', lw=1, color='#b8b0ac', label='Datos de Entrenamiento (Contexto)')
+
+# 2. Datos reales del período de prueba
+ax.plot(df_results.index, df_results['Reales'],
+        ls='--', lw=2, marker='o', markersize=4, color='#5778a4', label='Eventos Reales (Test)')
+
+# 3. Predicción puntual del modelo
+ax.plot(df_results.index, df_results['Predichos'],
+        ls='-', lw=2, color='#e49444', label='Predicción TimesFM')
+
+# 4. Intervalo de confianza
+ax.fill_between(df_results.index, df_results['Cuantil_10'], df_results['Cuantil_90'],
+                color='#e49444', alpha=0.2, label='Intervalo de Confianza (10%-90%)')
+
+# 5. Línea vertical para marcar el inicio de la predicción
+ax.axvline(train_data.index[-1], ls='--', lw=1, color='#85b6b2', label='Inicio de Predicción')
+
+# Configuraciones del gráfico
+ax.legend(frameon=False, ncols=5, loc='upper center', bbox_to_anchor=(0.5, 1.1))
+ax.grid(alpha=0.25)
+ax.set_title(f"Predicción de Eventos con TimesFM (Horizonte: {HORIZON} días)", y=1.08, fontsize=16)
+ax.set_ylabel("Cantidad de Eventos")
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+
+plt.tight_layout()
+plt.show()
+```
+
+Métricas Times FM_2:
+
+```{python}
+#| echo: false
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
+
+def calcular_metricas_error(y_true, y_pred):
+    """
+    Calcula el Error Absoluto Medio (MAE) y la Raíz del Error Cuadrático Medio (RMSE).
+
+    Args:
+        y_true (array-like): Valores reales u observados.
+        y_pred (array-like): Valores predichos por el modelo.
+
+    Returns:
+        dict: Un diccionario con los valores de 'MAE' y 'RMSE'.
+    """
+    # Corregimos los nombres a los estándares en inglés para usar las librerías
+    # MAE (Mean Absolute Error) = EMA (Error Medio Absoluto)
+    mae = mean_absolute_error(y_true, y_pred)
+
+    # RMSE (Root Mean Squared Error) = RSME
+    # Se calcula la raíz cuadrada del Error Cuadrático Medio (MSE)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+
+    return {'MAE': mae, 'RMSE': rmse}
+
+# --- Ejemplo de uso con tu DataFrame 'df_results' ---
+
+# Suponiendo que 'df_results' ya fue creado en el paso anterior
+# Contiene las columnas 'Reales' y 'Predichos'
+metricas = calcular_metricas_error(df_results['Reales'], df_results['Predichos'])
+
+print(f"Resultados de las métricas de error:")
+print(f"Error Absoluto Medio (MAE): {metricas['MAE']:.2f}")
+print(f"Raíz del Error Cuadrático Medio (RMSE): {metricas['RMSE']:.2f}")
+```
+
+En este experimento, intentamos ayudar a TimesFM dándole más información sobre la fecha. El resultado fue:
+
+Error Absoluto Medio (MAE): 3.86
+
+Raíz del Error Cuadrático Medio (RMSE): 5.02
+
+El rendimiento de esta segunda versión es ligeramente inferior al de la primera (MAE 3.86 vs 3.69). Esto nos lleva a una conclusión muy interesante: para un modelo tan avanzado como Times FM, darle características explícitas que ya es capaz de inferir por sí mismo no necesariamente mejora el resultado, e incluso puede empeorarlo marginalmente. El modelo ya sabe identificar patrones estacionales y cíclicos a partir de la secuencia de datos brutos.
+
+El gráfico de esta segunda versión también muestra un intervalo de confianza (la sombra). Es útil ver que la mayoría de los puntos reales (línea cian) caen dentro de este rango, lo que indica que el modelo tiene una buena estimación de la incertidumbre de su predicción.
+
+## Chronos_1
+
+Con el mismo criterio que Times FM, decidimos experimentar con otro modelo de vanguardia que es Chronos, del mismo hicimos dos versiones de manera de experimentar si podemos lograr mejoras en los mismos. El código de su implementación se encuentra en la notebook correspondiente.
+
+```{python}
+#| include: false
+## Parametros
+pipeline = ChronosPipeline.from_pretrained(
+    #"amazon/chronos-t5-small",
+    "amazon/chronos-t5-large",
+    device_map="auto",  # "cpu" o "mps" para Apple Silicon  cuda
+    torch_dtype=torch.bfloat16,
+)
+```
+
+```{python}
+#| include: false
+## Parametros de prediccion
+step_to_predict= 45  # Da la cantidad de pasos hacia adelante que vamos a predecir
+samples_to_consider= 2 # Simula 5 futuros posibles para entender mejor lo que puede pasar
+```
+
+```{python}
+#| include: false
+## Proyeccion
+forecast = pipeline.predict(
+    context=torch.tensor(df_siniestros["cantidad_eventos"]),
+    prediction_length=step_to_predict,
+    num_samples=samples_to_consider,
+)
+
+forecast_index = range(len(df_siniestros), len(df_siniestros) + step_to_predict)
+low, median, high = np.quantile(forecast[0].numpy(), [0.1, 0.5, 0.9], axis=0)
+```
+
+```{python}
+#| include: false
+predicted_mean = forecast.mean(axis=0)
+print(predicted_mean)
+```
+
+Gráfico del modelo Chronos_1:
+
+```{python}
+#| label: fig-chronos1i
+#| echo: false
+# Grafico
+plt.figure(figsize=(8, 4))
+plt.plot(df_siniestros["cantidad_eventos"], color="#5778a4", label="Data historica Siniestros")
+# Modified: Plot the median prediction starting from the end of the historical data index
+plt.plot(df_siniestros.index[-1] + pd.to_timedelta(np.arange(1, step_to_predict + 1), unit='D'), median, color="tomato", label="Cantidad de siniestros")
+plt.fill_between(df_siniestros.index[-1] + pd.to_timedelta(np.arange(1, step_to_predict + 1), unit='D'), low, high, color="tomato", alpha=0.3, label="80% Intervalo Prediccion")
+plt.legend()
+plt.grid()
+plt.show()
+```
+
+## Chronos_2
+
+```{python}
+#| include: false
+import pandas as pd
+import torch
+from chronos import BaseChronosPipeline
+```
+
+```{python}
+#| include: false
+n_test = 25
+df_siniestros_chronos_train = df_siniestros[:-n_test]
+df_siniestros_chronos_test = df_siniestros[-n_test:]
+```
+
+```{python}
+#| include: false
+df_siniestros_chronos_test.info()
+```
+
+```{python}
+#| include: false
+fechas_train = df_siniestros_chronos_train.index
+fechas_test = df_siniestros_chronos_test.index
+```
+
+```{python}
+#| include: false
+plt.figure(figsize=(12, 5))
+
+plt.plot(fechas_train, df_siniestros_chronos_train["cantidad_eventos"], label="Entrenamiento", color="#5778a4")
+plt.plot(fechas_test, df_siniestros_chronos_test ["cantidad_eventos"], label="Test real", color="#6a9f58")
+```
+
+```{python}
+#| include: false
+pipeline = BaseChronosPipeline.from_pretrained(
+    "amazon/chronos-t5-small",
+    device_map="cpu",
+    torch_dtype=torch.bfloat16,
+)
+```
+
+```{python}
+#| include: false
+quantiles, mean = pipeline.predict_quantiles(
+    context=torch.tensor(df_siniestros_chronos_train["cantidad_eventos"]),
+    prediction_length=n_test,
+    quantile_levels=[0.1, 0.5, 0.9],
+)
+
+'''
+El codigo nos da =
+quantiles[0.1] --> tensor de 24 valores representando el cuantil 10% para cada paso futuro.
+quantiles[0.5] = idem pero para la mediana.
+quantiles[0.9]= para el cuantil 90%.
+mean: tensor de 24 valores representando el valor medio predicho para cada paso futuro.
+'''
+```
+
+```{python}
+#| include: false
+# Aca imprime la ayuda del metodo
+from chronos import ChronosPipeline, ChronosBoltPipeline
+
+print(ChronosPipeline.predict.__doc__)  # for Chronos models
+print(ChronosBoltPipeline.predict.__doc__)  # for Chronos-Bolt models
+```
+
+```{python}
+#| label: fig-chronos2o0
+#| echo: false
+import matplotlib.pyplot as plt
+from datetime import timedelta
+import numpy as np # Import numpy
+
+# Extract quantiles and median from the prediction results
+low, median, high = quantiles[0, :, 0], quantiles[0, :, 1], quantiles[0, :, 2]
+
+# Get the actual values from the test set
+actual = df_siniestros_chronos_test["cantidad_eventos"].values
+
+# Get the last date from the training set index
+last_train_date = fechas_train[-1]
+
+# Create a date range for the forecast starting from the day after the last training date
+# The length of the forecast dates should match the length of the median prediction
+forecast_dates = [last_train_date + timedelta(days=i) for i in range(1, len(median) + 1)]
+
+
+plt.figure(figsize=(12, 5))
+
+plt.plot(fechas_train, df_siniestros_chronos_train["cantidad_eventos"], color="#5778a4", label="Datos históricos")
+plt.plot(forecast_dates, median, color="tomato", label="Predicción (mediana)")
+plt.fill_between(forecast_dates, low, high, color="tomato", alpha=0.3, label="Intervalo 80%")
+plt.plot(fechas_test, actual, color="#6a9f58", linestyle="--", marker="o", label="Datos reales (test)")
+
+plt.legend()
+plt.grid()
+plt.title("Predicción vs Real - Chronos Siniestros")
+plt.xlabel("Fecha")
+plt.ylabel("Cantidad de Eventos")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+Métricas Chronos_2:
+
+```{python}
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import numpy as np
+
+# Calculate RMSE for Chronos
+rmse_chronos = np.sqrt(mean_squared_error(actual, median))
+
+# Calculate MAE for Chronos
+mae_chronos = mean_absolute_error(actual, median)
+
+print(f"Chronos Model RMSE on Test Set: {rmse_chronos:0.2f}")
+print(f"Chronos Model MAE on Test Set: {mae_chronos:0.2f}")
+```
+
+Este segundo modelo de base presentó un enfoque y resultados diferentes:
+
+Error Absoluto Medio (MAE): 7.06
+
+Raíz del Error Cuadrático Medio (RMSE): 8.41
+
+El rendimiento de Chronos_2 (MAE 7.06) es bueno y se encuentra en un rango similar al de XGBoost (MAE 6.15), pero es notablemente inferior al de Times FM.
+
+El gráfico Predicción vs Real - Chronos es muy interesante. La predicción de Chronos_2 (línea naranja) se comporta de manera muy diferente a los otros modelos. Parece predecir un valor con muy poca variación, que se encuentra cerca del promedio de los datos reales que no intenta seguir la volatilidad de los datos. Esto sugiere que Chronos_2, para esta serie en particular, tuvo dificultades para identificar patrones claros.
+
+## AutoML Siniestros
+
+Esta herramienta, diseñada para encontrar un buen modelo de forma automática y rápida, decidimos incorporarla a partir de los visto en clase pero además teniendo en cuenta los conceptos de la materia Fundamentos del Aprendizaje Automático.
+
+```{python}
+#| include: false
+# AUTOTS APLICADO A SINIESTROS
+import time # Import the time module
+
+print("\n--- Iniciando análisis de Siniestros con AutoTS (Versión Rápida) ---")
+
+# Usamos una copia para asegurar que el DataFrame original no se modifica
+df_target = df_siniestros.copy()
+target_col = 'cantidad_eventos'
+
+# Convertir el índice 'fecha' en una columna
+df_target.reset_index(inplace=True)
+
+# División 80/20 para entrenamiento y prueba
+split_point = math.trunc(len(df_target) * 0.8)
+train_data = df_target.iloc[:split_point]
+test_data = df_target.iloc[split_point:]
+print(f"Tamaño de entrenamiento: {len(train_data)}, Tamaño de prueba: {len(test_data)}")
+
+
+model_siniestros_autots = AutoTS(
+    forecast_length=len(test_data),
+    frequency='D',
+    prediction_interval=0.95,
+    ensemble='simple',
+    model_list='fast',
+    max_generations=3,
+    num_validations=1,
+    no_negatives=True,
+    n_jobs='auto'
+)
+
+print("\nEntrenando modelo AutoTS (configuración rápida)...")
+start_time = time.time() # Start the timer
+model_siniestros_autots.fit(train_data, date_col='fecha', value_col=target_col)
+end_time = time.time() # Stop the timer
+print(f"Tiempo de entrenamiento del modelo AutoTS: {end_time - start_time:.2f} segundos") # Print the elapsed time
+```
+
+```{python}
+#| include: false
+# Predicción
+prediction = model_siniestros_autots.predict()
+forecast = prediction.forecast
+
+# Preparar el DataFrame de test para graficar
+test_data.set_index('fecha', inplace=True)
+```
+
+Métricas Auto_ML:
+
+```{python}
+#| echo: false
+# Evaluación y almacenamiento de métricas
+print("\n--- Resumen del Modelo Seleccionado ---")
+print(model_siniestros_autots)
+mae = mean_absolute_error(test_data[target_col], forecast[target_col])
+rmse = np.sqrt(mean_squared_error(test_data[target_col], forecast[target_col]))
+autots_results_summary['Siniestros'] = {'MAE': mae, 'RMSE': rmse}
+print(f"\n--- Métricas en Test --- \nMAE: {mae:.4f} \nRMSE: {rmse:.4f}")
+```
+
+Gráfico Auto_ML:
+
+```{python}
+#| label: fig-automl_1u
+#| echo: false
+# Visualización
+fig, ax = plt.subplots(figsize=(18, 6))
+ax.plot(test_data.index, test_data[target_col], label='Datos Reales (Test)', color='orange', marker='o', markersize=3)
+ax.plot(forecast.index, forecast[target_col], label='Predicción AutoTS', color='green')
+
+# Accedemos directamente a lower/upper_forecast.
+lower_forecast = prediction.lower_forecast
+upper_forecast = prediction.upper_forecast
+ax.fill_between(forecast.index, lower_forecast[target_col], upper_forecast[target_col], color='green', alpha=0.2, label='Intervalo 95%')
+
+ax.set_title('Predicción vs. Real para Siniestros (AutoTS - Rápido)', fontsize=16)
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+```
+
+En base al análisis realizado se obtuvieron las siguiente conclusiones:
+
+Error Absoluto Medio (MAE): 8.02
+
+Raíz del Error Cuadrático Medio (RMSE): 9.96
+
+El rendimiento de AutoTS (MAE 8.02) fue el más modesto de los cuatro modelos probados. Aunque no fue el más preciso, su valor radica en la automatización y la velocidad.
+
+El gráfico Predicción vs. Real para Siniestros (AutoTS) muestra un comportamiento muy interesante. La predicción (línea verde) intenta seguir la misma estrategia que TimesFM: capturar el ciclo semanal. Se pueden ver claramente los picos y valles rítmicos. Sin embargo, la predicción de AutoTS es menos precisa; sus picos no siempre se alinean con los de los datos reales y la amplitud de su ciclo parece menor.
+
+Se probaron cuatro enfoques distintos para predecir la cantidad de accidentes diarios.
+
+El modelo TimesFM fue el ganador indiscutible, logrando el error más bajo con una diferencia notable. Su capacidad para identificar el patrón cíclico semanal, ignorando el ruido diario, demostró ser la estrategia más efectiva.
+
+# Precipitaciones
+
+```{python}
+#| include: false
+
+df_precipitaciones.rename(columns={'Unnamed: 0': 'fecha'}, inplace=True)
+df_precipitaciones.head()
+```
+
+```{python}
+#| include: false
+df_precipitaciones.set_index('fecha', inplace=True)
+     
+```
+
+## **XGBoost**
+
+En un primer momento, y siguiendo los lineamientos del presente trabajo entrenamos un modelo XGBoost
+
+```{python}
+#| echo: false
+df_precipitaciones.plot(style='.',
+        figsize=(15, 5),
+        color=color_pal[1],
+        title='Precipitaciones en mm')
+plt.show()
+```
+
+```{python}
+#| include: false
+print('Cantidad de NaNs:')
+for column in df_precipitaciones:
+    nans = df_precipitaciones[column].isna().sum()
+    print(f'\tColumna {column}: {nans}')
+```
+
+```{python}
+#| label: fig-hist_precip_y6
+#| echo: false
+df_precipitaciones['(mm)'].plot(kind='hist', bins=500);
+```
+
+Como se puede observar, y hasta es lógico pensar, la mayoria de los días no llueve o llueve muy poco siendo las situaciones en las que hay una gran volumen de lluvia las menos frecuentes.
+
+```{python}
+#| label: fig-precip_ae
+#| echo: false
+Q1 = df_precipitaciones['(mm)'].quantile(0.25)
+Q3 = df_precipitaciones['(mm)'].quantile(0.75)
+IQR = Q3 - Q1
+
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+outliers = df_precipitaciones[(df_precipitaciones['(mm)'] < lower_bound) | (df_precipitaciones['(mm)'] > upper_bound)]
+
+print("Outliers based on IQR:")
+display(outliers)
+
+outliers['(mm)'].plot(style='.',
+        figsize=(15, 5),
+        color=color_pal[5],
+        title='Outliers in precipitaciones')
+plt.show()
+```
+
+División entre train y test del modelo, separando 80% de los datos para train y 20% para test.
+
+```{python}
+#| label: fig-div_trts_precip
+#| echo: false
+split_index = int(len(df_precipitaciones) * 0.8)
+train_precipitaciones = df_precipitaciones.iloc[:split_index]
+test_precipitaciones = df_precipitaciones.iloc[split_index:]
+
+fig, ax = plt.subplots(figsize=(15, 5))
+train_precipitaciones.plot(ax=ax, label='Training Set', title='Data Train/Test Split')
+test_precipitaciones.plot(ax=ax, label='Test Set')
+ax.axvline(test_precipitaciones.index[0], color='black', ls='--')
+ax.legend(['Training Set', 'Test Set'])
+plt.show()
+     
+```
+
+```{python}
+#| include: false
+tss_precipitaciones = TimeSeriesSplit(n_splits=5, test_size=1*200*1, gap=1) #se están dejando 24 hrs como brecha entre el conjunto de entrenamiento y el conjunto de prueba. (mayor representatividad)
+df_precipitaciones_cv = df_precipitaciones.sort_index()
+     
+```
+
+Dividimos los datos en 5 folds para el entrenamiento del modelo.
+
+```{python}
+#| echo: false
+fig, axs = plt.subplots(5, 1, figsize=(15, 15), sharex=True)
+
+fold = 0
+for train_idx, val_idx in tss_precipitaciones.split(df_precipitaciones_cv):
+    train = df_precipitaciones_cv.iloc[train_idx]
+    val = df_precipitaciones_cv.iloc[val_idx]
+    train['(mm)'].plot(ax=axs[fold],
+                          label='Training Set',
+                          title=f'Data Train/Test Split Fold {fold}')
+    val['(mm)'].plot(ax=axs[fold],label='Val Set')
+    axs[fold].axvline(val.index.min(), color='black', ls='--')
+    fold += 1
+plt.show()
+```
+
+```{python}
+#| include: false
+for i, (train_index, test_index) in enumerate(tss_precipitaciones.split(df_precipitaciones_cv)):
+     print(f"Fold {i}:")
+     print(f"  Train: index={train_index}")
+     print(f"  Test:  index={test_index}")
+```
+
+Entrenamos un modelo creando features, siguiendo el mismo criterio que con la serie de accidentes.
+
+```{python}
+#| include: false
+def create_features(df):
+    """
+    Creamos features basadas en el índice tiempo.
+    """
+    df = df.copy()
+    df['hour'] = df.index.hour
+    df['dayofweek'] = df.index.dayofweek
+    df['quarter'] = df.index.quarter
+    df['month'] = df.index.month
+    df['year'] = df.index.year
+    df['dayofyear'] = df.index.dayofyear
+    df['dayofmonth'] = df.index.day
+    df['weekofyear'] = df.index.isocalendar().week
+    return df
+```
+
+```{python}
+#| include: false
+df_precipitaciones_cv = create_features(df_precipitaciones_cv)
+```
+
+```{python}
+#| include: false
+def add_lags(df):
+    target_map = df['(mm)'].to_dict()
+    df['lag1'] = (df.index - pd.Timedelta('364 days')).map(target_map)
+    df['lag2'] = (df.index - pd.Timedelta('728 days')).map(target_map)
+    df['lag3'] = (df.index - pd.Timedelta('1092 days')).map(target_map)
+    return df
+```
+
+```{python}
+#| include: false
+df_precipitaciones_cv = add_lags(df_precipitaciones_cv)
+```
+
+```{python}
+#| include: false
+tss_precipitaciones_2 = TimeSeriesSplit(n_splits=5, test_size=200, gap=1)
+df_precipitaciones_cv = df_precipitaciones_cv.sort_index()
+```
+
+```{python}
+#| include: false
+fold = 0
+preds = [] #Almacena las predicciones de cada partición
+scores = [] #Guarda el RMSE de cada partición
+for train_idx, val_idx in tss_precipitaciones_2.split(df_precipitaciones_cv): #Iterar sobre las particiones
+    train = df_precipitaciones_cv.iloc[train_idx]
+    val = df_precipitaciones_cv.iloc[val_idx]
+
+    #train = create_features(train)
+    #val = create_features(val)
+
+    FEATURES = ['dayofyear', 'hour', 'dayofweek', 'quarter', 'month','year',
+                'lag1','lag2','lag3'] #Extraer características y target
+    TARGET = '(mm)'
+
+    X_train = train[FEATURES]
+    y_train = train[TARGET]
+
+    X_val = val[FEATURES]
+    y_val = val[TARGET]
+
+    reg = xgb.XGBRegressor(booster='gbtree', #utilizar modelado basado en árboles
+                           n_estimators=1000, #n_estimators – Número de árboles que llevan a cabo el boosting. También se entiende como el número de iteraciones de boosting.
+                           objective='reg:linear', #Aquí es donde se indica si queremos hacer regresión
+                           max_depth=3, #Máxima profundidad de un arbol.
+                           learning_rate=0.01,
+                           eval_metric=['rmse', 'mae'] )
+    reg.fit(X_train, y_train,
+            eval_set=[(X_train, y_train), (X_val, y_val)],
+            verbose=100)
+
+    y_pred = reg.predict(X_val)
+    preds.append(y_pred)
+    score = np.sqrt(mean_squared_error(y_val, y_pred))
+    scores.append(score)
+```
+
+```{python}
+#| include: false
+print(f'Score across folds {np.mean(scores):0.4f}')
+print(f'Fold scores:{scores}')
+```
+
+Gráfico de curvas de aprendizaje:
+
+```{python}
+#| label: fig-ca_precip_o5
+#| echo: false
+# Plot the training and validation history
+results = reg.evals_result()
+train_error = results['validation_0']['rmse']
+val_error = results['validation_1']['rmse']
+
+epoch = range(1, len(train_error) + 1)
+
+plt.plot(epoch, train_error, label='Train')
+plt.plot(epoch, val_error, label='Validation')
+plt.xlabel('Number of Boosting Rounds')
+plt.ylabel('Root Mean Squared Error (RMSE)')
+plt.title('Training and Validation History')
+plt.legend()
+plt.show()
+     
+
+```
+
+Feature Importance:
+
+```{python}
+#| label: fig-fimportprecip
+#| echo: false
+_ = plot_importance(reg, height=0.9)
+```
+
+```{python}
+#| include: false
+
+y_pred = reg.predict(X_val)
+```
+
+```{python}
+#| include: false
+val['prediction'] = reg.predict(X_val)
+```
+
+Predicción de precipitaciones:
+
+```{python}
+#| label: fig-pred_precipt_jt5
+#| echo: false
+ax = val.loc[(val.index >= '2017-08-03')]['(mm)'].plot(figsize=(15, 5), title='Week Of Data')
+val.loc[(val.index >= '2017-08-03')]['prediction'].plot()
+plt.legend(['Truth Data','Prediction'])
+plt.show()
+```
+
+```{python}
+#| include: false
+from math import sqrt
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import r2_score
+
+# Calculate error metrics using the filtered data
+mse = mean_squared_error(y_val, y_pred)
+mae = mean_absolute_error(y_val, y_pred)
+score = np.sqrt(mean_squared_error(y_val, y_pred))
+```
+
+Métrica de evaluación:
+
+```{python}
+#| echo: false
+# Print the error metrics
+print("Mean Squared Error (MSE):", mse)
+print("Mean Absolute Error (MAE):", mae)
+print(f'RMSE Score on Test set: {score:0.2f}')
+```
+
+Posteriormente entrenamos un modelo XGBoost optimizado, siendo las curvas de aprendizaje las siguientes:
+
+```{python}
+#| label: fig-pred_precipt_xg1
+#| echo: false
+from sklearn.model_selection import TimeSeriesSplit
+from sklearn.metrics import mean_squared_error
+import numpy as np
+import xgboost as xgb
+import optuna
+import matplotlib.pyplot as plt
+
+def objective(trial):
+    """Objective function for Optuna."""
+    params = {
+        'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+        'max_depth': trial.suggest_int('max_depth', 3, 10),
+        'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.1),
+        'subsample': trial.suggest_float('subsample', 0.6, 1.0),
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
+        'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 1.0, log=True),
+        'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 1.0, log=True),
+        'objective': 'reg:squarederror',
+        'eval_metric': 'rmse',
+        'random_state': 42,
+        'n_jobs': -1
+    }
+
+    tss = TimeSeriesSplit(n_splits=5, test_size=50, gap=1)
+    rmse_scores = []
+
+    df_processed = create_features(df_precipitaciones_cv.copy()) # Apply feature engineering
+    df_processed = add_lags(df_processed) # Apply lag features
+    df_processed.dropna(inplace=True) # Drop rows with NaN values from lags
+
+
+    FEATURES = ['dayofyear', 'hour', 'dayofweek', 'quarter', 'month','year',
+                'lag1','lag2','lag3'] # Update feature names
+    TARGET = '(mm)'
+
+    X = df_processed[FEATURES]
+    y = df_processed[TARGET]
+
+    models = []  # Store trained models to get eval_results later
+
+    for train_idx, val_idx in tss.split(X):
+        X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+        y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+
+        reg = xgb.XGBRegressor(**params)
+
+        eval_set = [(X_train, y_train), (X_val, y_val)]
+
+        reg.fit(X_train, y_train,
+                eval_set=eval_set,
+                verbose=False)
+
+        models.append(reg)  # Store the trained model
+
+        y_pred = reg.predict(X_val)
+        rmse = np.sqrt(mean_squared_error(y_val, y_pred))
+        rmse_scores.append(rmse)
+
+    # Store the evaluation results for the last fold of this trial
+    trial.set_user_attr('eval_results', models[-1].evals_result())
+
+    return np.mean(rmse_scores)
+
+study = optuna.create_study(direction='minimize')
+study.optimize(objective, n_trials=5)
+
+print("Best hyperparameters: ", study.best_params)
+print("Best RMSE: ", study.best_value)
+
+# Plot the training and validation history for the best trial
+best_trial = study.best_trial
+results = best_trial.user_attrs['eval_results']
+train_error = results['validation_0']['rmse']
+val_error = results['validation_1']['rmse']
+
+epoch = range(1, len(train_error) + 1)
+
+plt.plot(epoch, train_error, label='Train')
+plt.plot(epoch, val_error, label='Validation')
+plt.xlabel('Number of Boosting Rounds')
+plt.ylabel('Root Mean Squared Error (RMSE)')
+plt.title('Training and Validation History for Best Optuna Trial')
+plt.legend()
+plt.show()
+```
+
+```{python}
+#| include: false
+# Define features and target
+FEATURES = ['dayofyear', 'hour', 'dayofweek', 'quarter', 'month','year',
+            'lag1','lag2','lag3']
+TARGET = '(mm)'
+
+# Apply feature engineering and lag features to the full DataFrame
+df_processed = create_features(df_precipitaciones_cv.copy())
+df_processed = add_lags(df_processed)
+df_processed.dropna(inplace=True) # Drop rows with NaN values from lags
+
+# Split data into training and testing sets using the original split point
+train_cutoff = '01-07-2023'
+X_train_final = df_processed.loc[df_processed.index < train_cutoff, FEATURES]
+y_train_final = df_processed.loc[df_processed.index < train_cutoff, TARGET]
+X_test_final = df_processed.loc[df_processed.index >= train_cutoff, FEATURES]
+y_test_final = df_processed.loc[df_processed.index >= train_cutoff, TARGET]
+
+# Initialize XGBoost model with best hyperparameters from Optuna
+best_params = study.best_params
+final_reg = xgb.XGBRegressor(**best_params,
+                             objective='reg:squarederror',
+                             eval_metric='rmse',
+                             random_state=42,
+                             n_jobs=-1)
+
+# Train the final model on the full training set
+final_reg.fit(X_train_final, y_train_final)
+```
+
+Métricas de evaluación:
+
+```{python}
+#| echo: false
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+
+# Make predictions on the test set
+y_pred_final = final_reg.predict(X_test_final)
+
+# Calculate RMSE on the test set
+rmse_final = np.sqrt(mean_squared_error(y_test_final, y_pred_final))
+
+# Calculate MAE on the test set
+mae_final = mean_absolute_error(y_test_final, y_pred_final)
+
+# Print the evaluation metrics
+print(f"Final Model RMSE on Test Set: {rmse_final:0.2f}")
+print(f"Final Model MAE on Test Set: {mae_final:0.2f}")
+     
+```
+
+Gráfico XGBoost optimizado:
+
+```{python}
+#| label: fig-xgoptim_precipt_m7
+#| echo: false
+import matplotlib.pyplot as plt
+import xgboost as xgb
+from xgboost import plot_importance
+
+# 1. Create a new DataFrame called test_results from the X_test_final DataFrame
+test_results = X_test_final.copy()
+test_results['Actual'] = y_test_final
+test_results['Prediction'] = y_pred_final
+
+# 2. Plot the 'Actual' and 'Prediction' columns of the test_results DataFrame
+plt.figure(figsize=(15, 5))
+test_results['Actual'].plot(label='Actual')
+test_results['Prediction'].plot(label='Prediction')
+plt.title('Precipitaciones (mm) - Modelo XGBoost')
+
+# 3. Add a legend to the plot to distinguish between the 'Actual' and 'Prediction' lines.
+plt.legend()
+
+# 4. Display the plot.
+plt.show()
+
+# 5. Generate a plot showing the importance of the features in the final_reg model
+plot_importance(final_reg, height=0.9)
+
+# 6. Display the feature importance plot.
+plt.show()
+     
+
+```
+
+El modelo XGBoost, optimizado para esta tarea, obtuvo los siguientes resultados:
+
+Error Absoluto Medio (MAE): 4.68 mm
+
+Raíz del Error Cuadrático Medio (RMSE): 11.16 mm
+
+Un MAE de 4.68 mm indica el error promedio diario. Sin embargo, la gran diferencia con el RMSE (11.16) es el dato más importante aquí. Un RMSE que es más del doble del MAE nos dice que el modelo comete errores muy grandes en los días de lluvia intensa.
+
+El gráfico Precipitaciones (mm) lo confirma visualmente. El modelo (línea amarilla) es bastante bueno prediciendo los días de no lluvia (valores cercanos a cero). También logra identificar muchos de los días en que sí llueve, pero subestima sistemáticamente la intensidad de las precipitaciones fuertes. Se puede ver cómo los picos de la predicción son casi siempre más bajos que los picos reales (línea celeste).
+
+Las características más importantes para predecir la lluvia fueron:
+
+dayofyear (Día del año): De nuevo, la variable más influyente. El modelo aprendió que hay épocas del año con mayor probabilidad de lluvia (verano) y otras más secas.
+
+dayofweek (Día de la semana) y lags (datos de años anteriores): El modelo también encontró patrones, aunque menos fuertes, relacionados con el día de la semana y lo que llovió en fechas similares en años pasados.
+
+## **TimesFM**
+
+```{python}
+#| include: false
+import timesfm
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Cargar el modelo pre-entrenado
+model = timesfm.TimesFM_2p5_200M_torch.from_pretrained("google/timesfm-2.5-200m-pytorch")
+
+# Configurar el modelo para la inferencia
+# max_context es la cantidad de datos pasados que usará para predecir.
+# max_horizon es la cantidad máxima de pasos futuros que puede predecir.
+contexto = 2000
+
+model.compile(
+    timesfm.ForecastConfig(
+        max_context=contexto,      #<----esto se puede modificar
+        max_horizon=512,
+        normalize_inputs=True,
+        use_continuous_quantile_head=True,
+        force_flip_invariance=True,
+        infer_is_positive=True, # Importante para siniestros, que no pueden ser negativos
+        fix_quantile_crossing=True,
+    )
+)
+```
+
+```{python}
+#| include: false
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import datetime
+     
+
+```
+
+```{python}
+#| include: false
+# 3. Preparación de tus datos
+HORIZON = 30 # Tu horizonte de predicción
+
+# Asumimos que df_siniestros ya está cargado y es un DataFrame de pandas
+# con un índice de fecha y una columna con los valores de los siniestros.
+# Por ejemplo: df_siniestros['cantidad_siniestros']
+
+data_precipitaciones_TFM = df_precipitaciones.copy()
+split_index = int(len(data_precipitaciones_TFM) * 0.8)
+train_precipitaciones_TFM = data_precipitaciones_TFM[:split_index]
+test_precipitaciones_TFM = data_precipitaciones_TFM[split_index:]
+# --- ADAPTACIÓN CLAVE ---
+# El modelo necesita los últimos `max_context` (1024) puntos del set de entrenamiento
+# para predecir el futuro.
+contexto_para_predecir = train_precipitaciones_TFM['(mm)'][(contexto *-1):].to_numpy()
+
+# El modelo espera un formato específico: (batch_size, num_timesteps).
+# En nuestro caso, el batch_size es 1.
+inputs_del_modelo = contexto_para_predecir.reshape(1, -1)
+
+print(f"Forma de los datos de entrada para el modelo: {inputs_del_modelo.shape}")
+```
+
+```{python}
+#| include: false
+# 4. Generar la predicción
+# Le pasamos el contexto que preparamos y el horizonte que definimos.
+point_forecast, quantile_forecast = model.forecast(
+    horizon=HORIZON,
+    inputs=inputs_del_modelo
+)
+
+# El resultado 'point_forecast' es un array de numpy.
+# Extraemos la primera (y única) predicción.
+prediccion_precipitaciones = point_forecast[0]
+
+print(f"Se generaron {len(prediccion_precipitaciones)} predicciones para los próximos {HORIZON} días.")
+```
+
+Predicciones Times FM
+
+```{python}
+#| label: fig-pred_timesfm_1
+#| echo: false
+# 5. Visualizar y comparar
+# Creamos un DataFrame para facilitar la comparación
+df_resultados = pd.DataFrame({
+    'Reales': test_precipitaciones_TFM['(mm)'].iloc[:HORIZON].values,
+    'Predichos': prediccion_precipitaciones
+}, index=test_precipitaciones_TFM.index[:HORIZON])
+
+
+# Graficamos los resultados
+fig, ax = plt.subplots(figsize=(14, 7), dpi=120)
+
+# Datos de entrenamiento (mostramos una parte para dar contexto)
+ax.plot(train_precipitaciones_TFM.index[-200:], train_precipitaciones_TFM['(mm)'][-200:],
+        ls=':', lw=1, color='silver', label='Datos de Entrenamiento (Contexto)')
+
+# Datos reales del período de prueba
+ax.plot(df_resultados.index, df_resultados['Reales'],
+        ls='--', lw=2, color='cyan', label=f'Precipitaciones (Test)')
+
+# Predicciones del modelo
+ax.plot(df_resultados.index, df_resultados['Predichos'],
+        ls='-', lw=2, color='orange', label='Predicción TimesFM')
+
+# Línea vertical para marcar el inicio de la predicción
+ax.axvline(train_precipitaciones_TFM.index[-1], ls='--', lw=1, color='blue', label='Inicio de Predicción')
+
+ax.legend(frameon=False, ncols=4, loc='upper center', bbox_to_anchor=(0.5, 1.1))
+ax.grid(alpha=0.25)
+ax.set_title(f"Predicción de Precipitaciones con TimesFM (Horizonte: {HORIZON} días)", y=1.08)
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+plt.show()
+```
+
+Las métricas fueron las siguientes:
+
+```{python}
+#| echo: false
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
+
+def calcular_metricas_error(y_true, y_pred):
+    """
+    Calcula el Error Absoluto Medio (MAE) y la Raíz del Error Cuadrático Medio (RMSE).
+
+    Args:
+        y_true (array-like): Valores reales u observados.
+        y_pred (array-like): Valores predichos por el modelo.
+
+    Returns:
+        dict: Un diccionario con los valores de 'MAE' y 'RMSE'.
+    """
+    # Corregimos los nombres a los estándares en inglés para usar las librerías
+    # MAE (Mean Absolute Error) = EMA (Error Medio Absoluto)
+    mae = mean_absolute_error(y_true, y_pred)
+
+    # RMSE (Root Mean Squared Error) = RSME
+    # Se calcula la raíz cuadrada del Error Cuadrático Medio (MSE)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+
+    return {'MAE': mae, 'RMSE': rmse}
+
+# --- Ejemplo de uso con tu DataFrame 'df_results' ---
+
+# Suponiendo que 'df_results' ya fue creado en el paso anterior
+# Contiene las columnas 'Reales' y 'Predichos'
+metricas = calcular_metricas_error(df_results['Reales'], df_results['Predichos'])
+
+print(f"Resultados de las métricas de error:")
+print(f"Error Absoluto Medio (MAE): {metricas['MAE']:.2f}")
+print(f"Raíz del Error Cuadrático Medio (RMSE): {metricas['RMSE']:.2f}")
+```
+
+Como se puede observar el modelo no es bueno para poder captar la estructura de los datos. La linea casi en 0, indica que va a llover muy poco, y que además no puede predecir los días de lluvia y los días de lluvia intensa.
+
+## **Times_FM2**
+
+Al modelo anterior buscamos optimizarlo para conocer si podiamos mejorarlo.
+
+```{python}
+#| include: false
+from sklearn.preprocessing import StandardScaler
+
+# --- 1. FEATURE ENGINEERING (Esto ya estaba correcto) ---
+df_precipitaciones_featured = df_precipitaciones.copy()
+day_of_year = df_precipitaciones_featured.index.dayofyear
+df_precipitaciones_featured['dayofyear_sin'] = np.sin(2 * np.pi * day_of_year / 365.25)
+df_precipitaciones_featured['dayofyear_cos'] = np.cos(2 * np.pi * day_of_year / 365.25)
+df_precipitaciones_featured['dayofweek'] = df_precipitaciones_featured.index.dayofweek
+
+TARGET_COLUMN_TEMP = '(mm)'
+FEATURES_TEMP = [TARGET_COLUMN_TEMP, 'dayofyear_sin', 'dayofyear_cos', 'dayofweek']
+HORIZON_TEMP = 180 # Set the prediction horizon to 180 days
+CONTEXT_WINDOW_TEMP = 1095
+
+# --- 2. DIVISIÓN Y ESCALADO CORRECTOS (¡AQUÍ ESTÁ EL CAMBIO!) ---
+
+# **PASO 2.1: PRIMERO, dividimos los datos**
+split_index_temp = int(len(df_precipitaciones_featured) * 0.8)
+train_data_temp = df_precipitaciones_featured[:split_index_temp].copy() # Usamos .copy() para evitar warnings
+test_data_temp = df_precipitaciones_featured[split_index_temp:].copy()
+
+# **PASO 2.2: LUEGO, creamos y AJUSTAMOS el escalador SOLO CON DATOS DE ENTRENAMIENTO**
+scaler_temp = StandardScaler()
+scaler_temp.fit(train_data_temp[FEATURES_TEMP])
+
+# **PASO 2.3: AHORA, transformamos ambos conjuntos de datos por separado**
+train_data_temp[FEATURES_TEMP] = scaler_temp.transform(train_data_temp[FEATURES_TEMP])
+test_data_temp[FEATURES_TEMP] = scaler_temp.transform(test_data_temp[FEATURES_TEMP])
+
+# --- 3. PREPARACIÓN DEL INPUT (Sin cambios, pero ahora usa datos bien escalados) ---
+context_data_temp = train_data_temp[FEATURES_TEMP][-CONTEXT_WINDOW_TEMP:].to_numpy()
+model_inputs_temp = context_data_temp.T
+print(f"Forma de los datos de entrada de Temperatura: {model_inputs_temp.shape}")
+
+# --- 4. CONFIGURACIÓN Y PREDICCIÓN (Sin cambios) ---
+model.compile(
+    timesfm.ForecastConfig(
+        max_context=1024, max_horizon=512, normalize_inputs=True,
+        use_continuous_quantile_head=True, force_flip_invariance=True,
+        infer_is_positive=False, fix_quantile_crossing=True,
+    )
+)
+point_forecast_temp, quantile_forecast_temp = model.forecast(
+    horizon=HORIZON_TEMP, inputs=model_inputs_temp # Use HORIZON_TEMP for the prediction horizon
+)
+
+# --- CORRECCIÓN CLAVE: Construcción robusta del DataFrame de resultados ---
+
+# 1. Obtenemos el índice de fechas exacto para el período de la predicción.
+prediction_index = test_data_temp.index[:HORIZON_TEMP]
+
+# 2. Get the unscaled predicted values
+predicted_scaled = np.zeros((len(point_forecast_temp[0]), len(FEATURES_TEMP)))
+predicted_scaled[:, 0] = point_forecast_temp[0]
+predicted_unscaled = scaler_temp.inverse_transform(predicted_scaled)
+predicted_values_temp = predicted_unscaled[:, 0]
+
+# 3. Obtenemos los valores reales correspondientes a ESE índice desde el DataFrame ORIGINAL (no escalado).
+real_values = df_precipitaciones.loc[prediction_index, TARGET_COLUMN_TEMP]
+
+# 4. Creamos el DataFrame de resultados asegurando que todo esté alineado.
+df_results_temp = pd.DataFrame({
+    'Reales': real_values.values,
+    'Predichos': predicted_values_temp
+}, index=prediction_index)
+
+```
+
+```{python}
+#| label: fig-plot_tmfm_2
+#| echo: false
+# --- Gráfico Corregido ---
+fig, ax = plt.subplots(figsize=(15, 8))
+
+# Datos de entrenamiento (contexto) - tomados del df original para claridad
+ax.plot(df_precipitaciones[TARGET_COLUMN_TEMP].loc[train_data_temp.index[-400:]], label='Datos de Entrenamiento (Contexto)', color='silver', ls=':')
+
+# Datos de prueba (reales) y la predicción - tomados del nuevo df_results_temp
+ax.plot(df_results_temp.index, df_results_temp['Reales'], label='Precipitacines Real (Test)', color='cyan', ls='--', marker='o', markersize=4)
+ax.plot(df_results_temp.index, df_results_temp['Predichos'], label='Predicción TimesFM (Corregida)', color='orange', ls='-')
+
+# Línea vertical de inicio de predicción
+ax.axvline(train_data_temp.index[-1], color='blue', linestyle='--', label='Inicio de Predicción')
+
+# Configuraciones del gráfico
+ax.set_title('Predicción de Precipitaciones con Fechas Corregidas', fontsize=16)
+ax.set_ylabel('Precipitaciones (mm)')
+ax.legend()
+ax.grid(alpha=0.3)
+plt.show()
+```
+
+Métricas:
+
+```{python}
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
+
+def calcular_metricas_error(y_true, y_pred):
+    """
+    Calcula el Error Absoluto Medio (MAE) y la Raíz del Error Cuadrático Medio (RMSE).
+
+    Args:
+        y_true (array-like): Valores reales u observados.
+        y_pred (array-like): Valores predichos por el modelo.
+
+    Returns:
+        dict: Un diccionario con los valores de 'MAE' y 'RMSE'.
+    """
+    # Corregimos los nombres a los estándares en inglés para usar las librerías
+    # MAE (Mean Absolute Error) = EMA (Error Medio Absoluto)
+    mae = mean_absolute_error(y_true, y_pred)
+
+    # RMSE (Root Mean Squared Error) = RSME
+    # Se calcula la raíz cuadrada del Error Cuadrático Medio (MSE)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+
+    return {'MAE': mae, 'RMSE': rmse}
+
+# --- Ejemplo de uso con tu DataFrame 'df_results' ---
+
+# Suponiendo que 'df_results' ya fue creado en el paso anterior
+# Contiene las columnas 'Reales' y 'Predichos'
+metricas = calcular_metricas_error(df_results['Reales'], df_results['Predichos'])
+
+print(f"Resultados de las métricas de error:")
+print(f"Error Absoluto Medio (MAE): {metricas['MAE']:.2f}")
+print(f"Raíz del Error Cuadrático Medio (RMSE): {metricas['RMSE']:.2f}")
+```
+
+## **Chronos**
+
+En este caso hicimos un modelo con Chronos pero el resultado fue bastante malo, y debido a eso decidimos no incluirlo en el presente trabajo, pero se encuentra su desarrollo en el notebook.
+
+```{python}
+#| include: false
+df_modelo_precipitaciones_chronos = df_precipitaciones.copy()
+## Parametros de prediccion
+step_to_predict= 20  # Da la cantidad de pasos hacia adelante que vamos a predecir
+samples_to_consider= 5 # Simula 5 futuros posibles para entender mejor lo que puede pasar
+```
+
+```{python}
+#| include: false
+## Proyeccion
+forecast = pipeline.predict(
+    context=torch.tensor(df_modelo_precipitaciones_chronos["(mm)"]),
+    prediction_length=step_to_predict,
+    num_samples=samples_to_consider,
+)
+
+forecast_index = range(len(df_modelo_precipitaciones_chronos), len(df_modelo_precipitaciones_chronos) + step_to_predict)
+low, median, high = np.quantile(forecast[0].numpy(), [0.1, 0.5, 0.9], axis=0)
+     
+```
+
+```{python}
+#| include: false
+predicted_mean = forecast.mean(axis=0)
+print(predicted_mean)
+```
+
+```{python}
+#| label: fig-Chronos_1
+#| include: false
+# Grafico
+plt.figure(figsize=(8, 4))
+plt.plot(df_modelo_precipitaciones_chronos["(mm)"], color="royalblue", label="(mm)")
+# Modified: Plot the median prediction starting from the end of the historical data index
+plt.plot(df_siniestros.index[-1] + pd.to_timedelta(np.arange(1, step_to_predict + 1), unit='D'), median, color="tomato", label="Temperatura media")
+plt.fill_between(df_siniestros.index[-1] + pd.to_timedelta(np.arange(1, step_to_predict + 1), unit='D'), low, high, color="tomato", alpha=0.3, label="80% Intervalo Prediccion")
+plt.legend()
+plt.grid()
+plt.show()
+```
+
+## **Chronos_2**
+
+Decidimos iterar sobre el modelo anterior, para iterar e investigar si obteniamos un mejor modelo.
+
+```{python}
+#| include: false
+n_test = 20
+df_precipitacines_chronos_train = df_modelo_precipitaciones_chronos[:-n_test]
+df_precipitaciones_chronos_test = df_modelo_precipitaciones_chronos[-n_test:]
+```
+
+```{python}
+#| include: false
+fechas_train = df_precipitacines_chronos_train.index
+fechas_test = df_precipitaciones_chronos_test.index
+```
+
+```{python}
+#| include: false
+plt.figure(figsize=(12, 5))
+
+plt.plot(fechas_train, df_precipitacines_chronos_train["(mm)"], label="Entrenamiento", color="blue")
+plt.plot(fechas_test, df_precipitaciones_chronos_test["(mm)"], label="Test real", color="green")
+```
+
+```{python}
+#| include: false
+pipeline = BaseChronosPipeline.from_pretrained(
+    "amazon/chronos-t5-small",
+    device_map="cpu",
+    torch_dtype=torch.bfloat16,
+)
+```
+
+```{python}
+#| include: false
+quantiles, mean = pipeline.predict_quantiles(
+    context=torch.tensor(df_siniestros_chronos_train["cantidad_eventos"]),
+    prediction_length=n_test,
+    quantile_levels=[0.1, 0.5, 0.9],
+)
+
+'''
+El codigo nos da =
+quantiles[0.1] --> tensor de 24 valores representando el cuantil 10% para cada paso futuro.
+quantiles[0.5] = idem pero para la mediana.
+quantiles[0.9]= para el cuantil 90%.
+mean: tensor de 24 valores representando el valor medio predicho para cada paso futuro.
+'''
+```
+
+```{python}
+#| include: false
+# Aca imprime la ayuda del metodo
+from chronos import ChronosPipeline, ChronosBoltPipeline
+
+print(ChronosPipeline.predict.__doc__)  # for Chronos models
+print(ChronosBoltPipeline.predict.__doc__)  # for Chronos-Bolt models
+```
+
+Gráfico modelo Chronos_2:
+
+```{python}
+#| label: fig-Chronos2_pred
+#| echo: false
+import matplotlib.pyplot as plt
+from datetime import timedelta
+import numpy as np # Import numpy
+
+# Extract quantiles and median from the prediction results
+low, median, high = quantiles[0, :, 0], quantiles[0, :, 1], quantiles[0, :, 2]
+
+# Get the actual values from the test set
+actual = df_precipitaciones_chronos_test["(mm)"].values
+
+# Get the last date from the training set index
+last_train_date = fechas_train[-1]
+
+# Create a date range for the forecast starting from the day after the last training date
+# The length of the forecast dates should match the length of the median prediction
+forecast_dates = [last_train_date + timedelta(days=i) for i in range(1, len(median) + 1)]
+
+
+plt.figure(figsize=(12, 5))
+
+plt.plot(fechas_train, df_precipitacines_chronos_train["(mm)"], color="royalblue", label="Datos históricos")
+plt.plot(forecast_dates, median, color="tomato", label="Predicción (mediana)")
+plt.fill_between(forecast_dates, low, high, color="tomato", alpha=0.3, label="Intervalo 80%")
+plt.plot(fechas_test, actual, color="green", linestyle="--", marker="o", label="Datos reales (test)")
+
+plt.legend()
+plt.grid()
+plt.title("Predicción vs Real - Chronos Precipitaciones")
+plt.xlabel("Fecha")
+plt.ylabel("Cantidad de Eventos")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+Métricas:
+
+```{python}
+#| echo: false
+import numpy as np
+
+# Calculate RMSE for Chronos
+rmse_chronos = np.sqrt(mean_squared_error(actual, median))
+
+# Calculate MAE for Chronos
+mae_chronos = mean_absolute_error(actual, median)
+
+print(f"Chronos Model RMSE on Test Set: {rmse_chronos:0.2f}")
+print(f"Chronos Model MAE on Test Set: {mae_chronos:0.2f}")
+```
+
+Este modelo tuvo un rendimiento extremadamente bajo:
+
+Error Absoluto Medio (MAE): `{python} f"{mae_chronos:.2f}"`
+
+Raíz del Error Cuadrático Medio (RMSE): `{python} f"{rmse_chronos:.2f}"`
+
+Con un MAE de `{python} f"{mae_chronos:.2f}"` mm, el error de Chronos es casi seis veces mayor que el de XGBoost. Esto indica que el modelo falló por completo en la predicción.
+
+El gráfico Predicción vs Real - Chronos Precipitaciones nos muestra el porqué de este resultado.
+
+Datos Reales (puntos verdes): El período de prueba tuvo cero o muy poca lluvia (los puntos están en la base del eje Y).
+
+Predicción (línea naranja): A pesar de que no llovió, Chronos predijo lluvias significativas y constantes, con valores entre 20 y 40 mm.
+
+La serie de precipitaciones es muy dispersa (muchos ceros y picos aleatorios). Es probable que el modelo Chronos no haya podido encontrar un patrón claro y, al ser forzado a predecir, haya generado una especie de promedio de días lluviosos basado en el historial, ignorando por completo las condiciones reales del período de prueba. El modelo aprendió que a veces llueve mucho, pero no aprendió a predecir cuándo.
+
+## **AutoML_Precipitaciones**
+
+```{python}
+#| include: false
+import time # Import the time module
+# AUTOTS APLICADO A PRECIPITACIONES
+
+print("\n--- Iniciando análisis de Precipitaciones con AutoTS (Versión Rápida) ---")
+
+# Usamos una copia para asegurar que el DataFrame original no se modifica
+df_target = df_precipitaciones.copy()
+target_col = '(mm)'  # <-- CAMBIO: Columna objetivo para precipitaciones
+
+# Convertir el índice 'fecha' en una columna
+df_target.reset_index(inplace=True)
+
+# División 80/20 para entrenamiento y prueba
+split_point = math.trunc(len(df_target) * 0.8)
+train_data = df_target.iloc[:split_point]
+test_data = df_target.iloc[split_point:]
+print(f"Tamaño de entrenamiento: {len(train_data)}, Tamaño de prueba: {len(test_data)}")
+
+model_precip_autots = AutoTS(
+    forecast_length=len(test_data),
+    frequency='D',
+    prediction_interval=0.95,
+    ensemble='simple',
+    model_list='fast',
+    max_generations=3,
+    num_validations=1,
+    no_negatives=True,
+    n_jobs='auto'
+)
+
+print("\nEntrenando modelo AutoTS (configuración rápida)...")
+start_time = time.time() # Start the timer
+model_precip_autots.fit(train_data, date_col='fecha', value_col=target_col)
+end_time = time.time() # Stop the timer
+print(f"Tiempo de entrenamiento del modelo AutoTS: {end_time - start_time:.2f} segundos") # Print the elapsed time
+
+# Predicción
+prediction = model_precip_autots.predict()
+forecast = prediction.forecast
+
+# Preparar el DataFrame de test para graficar
+test_data.set_index('fecha', inplace=True)
+```
+
+Métricas
+
+```{python}
+#| echo: false
+# Evaluación y almacenamiento de métricas
+print("\n--- Resumen del Modelo Seleccionado ---")
+print(model_precip_autots)
+mae = mean_absolute_error(test_data[target_col], forecast[target_col])
+rmse = np.sqrt(mean_squared_error(test_data[target_col], forecast[target_col]))
+autots_results_summary['Precipitaciones'] = {'MAE': mae, 'RMSE': rmse}
+print(f"\n--- Métricas en Test --- \nMAE: {mae:.4f} \nRMSE: {rmse:.4f}")
+```
+
+Gráfico AutoML:
+
+```{python}
+#| label: fig-Automl_precip
+#| echo: false
+# Visualización
+fig, ax = plt.subplots(figsize=(18, 6))
+ax.plot(test_data.index, test_data[target_col], label='Datos Reales (Test)', color='orange', marker='o', markersize=3)
+ax.plot(forecast.index, forecast[target_col], label='Predicción AutoTS', color='green')
+
+lower_forecast = prediction.lower_forecast
+upper_forecast = prediction.upper_forecast
+ax.fill_between(forecast.index, lower_forecast[target_col], upper_forecast[target_col], color='green', alpha=0.2, label='Intervalo 95%')
+
+ax.set_title('Predicción vs. Real para Precipitaciones (AutoTS - Rápido)', fontsize=16)
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+```
+
+El modelo AutoML (AutoTS) fue el ganador por un margen claro, obteniendo el MAE más bajo (`{python} f"{mae:.2f}"` mm).
+
+El gráfico Predicción vs. Real para Precipitaciones (AutoTS) explica su éxito. La predicción de AutoTS (línea verde) es extremadamente conservadora: predice cero o casi cero para la gran mayoría de los días.
+
+Esta estrategia es muy inteligente para una serie como esta, donde la mayoría de los días efectivamente no llueve. Al predecir cero casi siempre, el modelo acierta en la mayoría de los casos, manteniendo su error promedio (MAE) muy bajo. Por otro lado, al igual que XGBoost, falla por completo en predecir los picos de lluvia intensa, lo que se refleja en su altísimo RMSE, que es casi idéntico al de XGBoost.
+
+# Temperatura
+
+```{python}
+#| label: armado del df_temperatura
+#| include: false
+#| output: false
+df_temperatura.rename(columns={'Unnamed: 0': 'fecha', '(°C)': 'Maxima', 'Unnamed: 2': 'Minima'}, inplace=True)
+
+mask = (df_temperatura['Maxima'].isin(['\\N', 'N'])) | (df_temperatura['Minima'].isin(['\\N', 'N']))
+
+# 1. Reemplazar '\\N' (y posiblemente 'N') por NaN
+df_temperatura[['Maxima', 'Minima']] = df_temperatura[['Maxima', 'Minima']].replace({'\\N': np.nan, 'N': np.nan})
+
+# 2. Convertir a float
+df_temperatura[['Maxima', 'Minima']] = df_temperatura[['Maxima', 'Minima']].astype(float)
+
+df_temperatura.dropna(inplace=True)
+
+df_temperatura['Media']= (df_temperatura['Maxima'] + df_temperatura['Minima']) / 2
+
+df_temperatura.set_index('fecha', inplace=True)
+
+
+
+```
+
+```{python}
+#| label: fig-plot serie temp temperaturas medias diarias
+#| echo: false
+#| output: true
+# Seleccionar la temperatura media como nuestro objetivo a predecir
+df_modelo_temp = df_temperatura[['Media']].copy()
+
+# Visualización de la nueva serie temporal de temperatura media
+df_modelo_temp.plot(style='.',
+                    figsize=(15, 5),
+                    color=color_pal[3],
+                    title='Temperaturas Medias Diarias')
+plt.show()
+```
+
+```{python}
+#| label: crear nuevas features df_temp
+#| echo: false
+#| output: false
+def create_features(df):
+    """
+    Crea características temporales a partir del índice de tipo datetime de un DataFrame.
+    """
+    df = df.copy()
+    df['dayofweek'] = df.index.dayofweek
+    df['quarter'] = df.index.quarter
+    df['month'] = df.index.month
+    df['year'] = df.index.year
+    df['dayofyear'] = df.index.dayofyear
+    df['dayofmonth'] = df.index.day
+    df['weekofyear'] = df.index.isocalendar().week
+    return df
+
+df_modelo_temp = create_features(df_modelo_temp)
+```
+
+```{python}
+#| label: TimeSeriesSplit para la validación cruzada
+#| echo: false
+#| output: false
+# Usamos TimeSeriesSplit para la validación cruzada
+tss = TimeSeriesSplit(n_splits=5, test_size=365, gap=1)
+
+scores = []
+fold = 0
+for train_idx, val_idx in tss.split(df_modelo_temp):
+    train = df_modelo_temp.iloc[train_idx]
+    test = df_modelo_temp.iloc[val_idx]
+
+    # ¡IMPORTANTE! Se define la variable 'Media' como objetivo
+    FEATURES = ['dayofweek', 'quarter', 'month', 'year', 'dayofyear', 'dayofmonth', 'weekofyear']
+    TARGET = 'Media'
+
+    X_train = train[FEATURES]
+    y_train = train[TARGET]
+
+    X_test = test[FEATURES]
+    y_test = test[TARGET]
+
+    reg = xgb.XGBRegressor(base_score=0.5, booster='gbtree',
+                           n_estimators=1000,
+                           early_stopping_rounds=50,
+                           objective='reg:linear',
+                           max_depth=3,
+                           learning_rate=0.01)
+    reg.fit(X_train, y_train,
+            eval_set=[(X_train, y_train), (X_test, y_test)],
+            verbose=False) # Se cambia a False para no imprimir el log de cada fold
+
+    y_pred = reg.predict(X_test)
+    score = np.sqrt(mean_squared_error(y_test, y_pred))
+    scores.append(score)
+    print(f'Fold {fold} RMSE: {score}')
+    fold += 1
+
+print(f'\nPromedio de RMSE en todos los folds: {np.mean(scores):.4f}')
+
+```
+
+```{python}
+#| label: dividir train test temp
+#| include: false
+#| output: true
+# Usamos TimeSeriesSplit para la validación cruzada
+# Dividimos en conjunto de entrenamiento y prueba para el modelo final
+split_date = '01-Jan-2023'
+train = df_modelo_temp.loc[df_modelo_temp.index <= split_date].copy()
+test = df_modelo_temp.loc[df_modelo_temp.index > split_date].copy()
+
+# Entrenamos el modelo final con todos los datos de entrenamiento
+X_train_final = train[FEATURES]
+y_train_final = train[TARGET]
+X_test_final = test[FEATURES]
+y_test_final = test[TARGET]
+
+reg_final = xgb.XGBRegressor(base_score=0.5, booster='gbtree',
+                       n_estimators=1000,
+                       early_stopping_rounds=50,
+                       objective='reg:linear',
+                       max_depth=3,
+                       learning_rate=0.01)
+
+reg_final.fit(X_train_final, y_train_final,
+        eval_set=[(X_train_final, y_train_final), (X_test_final, y_test_final)],
+        verbose=100)
+
+# Realizamos la predicción en el conjunto de prueba
+test['prediction'] = reg_final.predict(X_test_final)
+df_final = df_modelo_temp.merge(test[['prediction']], how='left', left_index=True, right_index=True)
+
+```
+
+```{python}
+#| label: fig-temperatura1
+#| echo: false
+
+# Visualización de la predicción vs los datos reales
+ax = df_final[['Media']].plot(figsize=(15, 5))
+df_final['prediction'].plot(ax=ax, style='.')
+plt.legend(['Dato Real (Media)', 'Predicción'])
+ax.set_title('Predicción de Temperatura Media vs Dato Real')
+plt.show()
+
+# Calculamos el error final
+score_final = np.sqrt(mean_squared_error(test['Media'], test['prediction']))
+print(f'RMSE en el conjunto de prueba final: {score_final:.4f}')
+```
+
+```{python}
+#| label: optuna_temp
+#| include: false
+#| output: true
+from sklearn.model_selection import TimeSeriesSplit
+from sklearn.metrics import mean_squared_error
+import numpy as np
+import xgboost as xgb
+import optuna
+import matplotlib.pyplot as plt
+
+# Modify the add_lags function to work with the 'Media' column
+def add_lags(df):
+    """
+    Add lag features to the DataFrame based on the 'Media' column.
+    """
+    # Check if 'Media' column exists before proceeding
+    if 'Media' not in df.columns:
+        print("Error: 'Media' column not found in the DataFrame.")
+        return df # Return the original DataFrame if the column is missing
+
+    target_map = df['Media'].to_dict()
+    df['lag1'] = (df.index - pd.Timedelta('365 days')).map(target_map)
+    df['lag2'] = (df.index - pd.Timedelta('730 days')).map(target_map)
+    df['lag3'] = (df.index - pd.Timedelta('1095 days')).map(target_map)
+    return df
+
+
+def objective(trial):
+    """Objective function for Optuna."""
+    params = {
+        'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+        'max_depth': trial.suggest_int('max_depth', 3, 10),
+        'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.1),
+        'subsample': trial.suggest_float('subsample', 0.6, 1.0),
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
+        'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 1.0, log=True),
+        'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 1.0, log=True),
+        'objective': 'reg:squarederror',
+        'eval_metric': 'rmse',
+        'random_state': 42,
+        'n_jobs': -1
+    }
+
+    df_processed = create_features(df_modelo_temp.copy()) # Apply feature engineering
+    df_processed = add_lags(df_processed) # Apply lag features
+    df_processed.dropna(inplace=True) # Drop rows with NaN values from lags
+
+    # Calculate compatible test_size for TimeSeriesSplit
+    n_samples = len(df_processed)
+    n_splits = 5
+    gap = 1
+    # test_size = int((n_samples - gap) / (n_splits + 1)) -1 # This is one way to calculate test_size
+    test_size = 218 # Adjusted test_size to be compatible with the number of samples
+
+    tss = TimeSeriesSplit(n_splits=n_splits, test_size=test_size, gap=gap)
+    rmse_scores = []
+
+
+    FEATURES = ['dayofweek', 'quarter', 'month', 'year', 'dayofyear', 'dayofmonth', 'weekofyear',
+                'lag1','lag2','lag3'] # Include lag features
+    TARGET = 'Media' # Set target to 'Media' for temperature data
+
+    X = df_processed[FEATURES]
+    y = df_processed[TARGET]
+
+    models = []  # Store trained models to get eval_results later
+
+    for train_idx, val_idx in tss.split(X):
+        X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+        y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+
+        reg = xgb.XGBRegressor(**params)
+
+        eval_set = [(X_train, y_train), (X_val, y_val)]
+
+        reg.fit(X_train, y_train,
+                eval_set=eval_set,
+                verbose=False)
+
+        models.append(reg)  # Store the trained model
+
+        y_pred = reg.predict(X_val)
+        rmse = np.sqrt(mean_squared_error(y_val, y_pred))
+        rmse_scores.append(rmse)
+
+    # Store the evaluation results for the last fold of this trial
+    trial.set_user_attr('eval_results', models[-1].evals_result())
+
+    return np.mean(rmse_scores)
+
+study = optuna.create_study(direction='minimize')
+study.optimize(objective, n_trials=5)
+
+print("Best hyperparameters: ", study.best_params)
+print("Best RMSE: ", study.best_value)
+
+
+```
+
+Curvas de apredizaje
+
+```{python}
+#| label: fig-temp2
+#| include: false
+# Plot the training and validation history for the best trial
+best_trial = study.best_trial
+results = best_trial.user_attrs['eval_results']
+train_error = results['validation_0']['rmse']
+val_error = results['validation_1']['rmse']
+
+epoch = range(1, len(train_error) + 1)
+
+plt.plot(epoch, train_error, label='Train')
+plt.plot(epoch, val_error, label='Validation')
+plt.xlabel('Number of Boosting Rounds')
+plt.ylabel('Root Mean Squared Error (RMSE)')
+plt.title('Training and Validation History for Best Optuna Trial')
+plt.legend()
+plt.show()
+```
+
+```{python}
+#| label: definiendo features
+#| include: false
+#| output: true
+# Define features and target
+FEATURES = ['dayofweek', 'quarter', 'month', 'year', 'dayofyear', 'dayofmonth', 'weekofyear',
+                'lag1','lag2','lag3']
+TARGET = 'Media'
+
+# Apply feature engineering and lag features to the full DataFrame
+df_processed = create_features(df_modelo_temp.copy())
+df_processed = add_lags(df_processed)
+df_processed.dropna(inplace=True) # Drop rows with NaN values from lags
+
+# Split data into training and testing sets using the original split point
+train_cutoff = '01-01-2023'
+X_train_final = df_processed.loc[df_processed.index < train_cutoff, FEATURES]
+y_train_final = df_processed.loc[df_processed.index < train_cutoff, TARGET]
+X_test_final = df_processed.loc[df_processed.index >= train_cutoff, FEATURES]
+y_test_final = df_processed.loc[df_processed.index >= train_cutoff, TARGET]
+
+# Initialize XGBoost model with best hyperparameters from Optuna
+best_params = study.best_params
+final_reg = xgb.XGBRegressor(**best_params,
+                             objective='reg:squarederror',
+                             eval_metric='rmse',
+                             random_state=42,
+                             n_jobs=-1)
+
+# Train the final model on the full training set
+final_reg.fit(X_train_final, y_train_final)
+```
+
+Metricas del modelo XGBoost optimizado
+
+```{python}
+#| label: metricas finales xgboost_1
+#| echo: false
+#| output: true
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+
+# Make predictions on the test set
+y_pred_final = final_reg.predict(X_test_final)
+
+# Calculate RMSE on the test set
+rmse_final = np.sqrt(mean_squared_error(y_test_final, y_pred_final))
+
+# Calculate MAE on the test set
+mae_final = mean_absolute_error(y_test_final, y_pred_final)
+
+# Print the evaluation metrics
+print(f"Final Model RMSE on Test Set: {rmse_final:0.2f}")
+print(f"Final Model MAE on Test Set: {mae_final:0.2f}")
+```
+
+```{python}
+#| label: metricas finales xgboost_2
+#| include: false
+#| output: true
+
+import matplotlib.pyplot as plt
+import xgboost as xgb
+from xgboost import plot_importance
+
+# 1. Create a new DataFrame called test_results from the X_test_final DataFrame
+test_results = X_test_final.copy()
+test_results['Actual'] = y_test_final
+test_results['Prediction'] = y_pred_final
+```
+
+```{python}
+#| label: fig-temp4a
+#| echo: false
+# 2. Plot the 'Actual' and 'Prediction' columns of the test_results DataFrame
+plt.figure(figsize=(15, 5))
+test_results['Actual'].plot(label='Actual')
+test_results['Prediction'].plot(label='Prediction')
+plt.title('Temperatura - Prediccion')
+
+# 3. Add a legend to the plot to distinguish between the 'Actual' and 'Prediction' lines.
+plt.legend()
+
+# 4. Display the plot.
+plt.show()
+
+# 5. Generate a plot showing the importance of the features in the final_reg model
+plot_importance(final_reg, height=0.9)
+
+# 6. Display the feature importance plot.
+plt.show()
+```
+
+La temperatura media diaria es una serie con un comportamiento fuertemente estacional y predecible, lo que la convierte en un buen caso de prueba para evaluar la capacidad de los modelos para capturar patrones cíclicos claros.
+
+**XGBoost:** El modelo optimizado para la temperatura obtuvo un rendimiento muy bueno:
+
+Error Absoluto Medio (MAE): 3.17 °C
+
+Raíz del Error Cuadrático Medio (RMSE): 4.01 °C
+
+Un MAE de 3.17 °C es un resultado sólido, indicando que el modelo se equivoca, en promedio, en unos 3 grados. La cercanía entre el MAE y el RMSE sugiere que el modelo no comete errores desproporcionadamente grandes; su rendimiento es bastante consistente.
+
+El gráfico Temperatura - Predicción muestra que la predicción (línea amarilla) sigue de manera muy cercana la curva de los datos reales (línea celeste). Captura a la perfección el ciclo anual (inviernos fríos y veranos cálidos) y también las fluctuaciones de corto plazo.
+
+El gráfico de Feature Importance confirma por qué el modelo es tan preciso. Las variables más importantes son, sin sorpresa, aquellas relacionadas con el tiempo:
+
+dayofyear (Día del año): Es la variable más crucial. El modelo aprendió la forma exacta del ciclo de temperatura a lo largo de un año.
+
+dayofweek, lag1, dayofmonth, lag2, lag3: Todas estas variables ayudan al modelo a refinar la predicción, utilizando información del ciclo semanal y de lo que ocurrió en años anteriores para ajustar el pronóstico.
+
+## TimesFM
+
+```{python}
+#| label: cargar modelo timesfm temp
+#| echo: false
+#| output: false
+# Cargar el modelo pre-entrenado
+model = timesfm.TimesFM_2p5_200M_torch.from_pretrained("google/timesfm-2.5-200m-pytorch")
+
+# Configurar el modelo para la inferencia
+# max_context es la cantidad de datos pasados que usará para predecir.
+# max_horizon es la cantidad máxima de pasos futuros que puede predecir.
+model.compile(
+    timesfm.ForecastConfig(
+        max_context=1024,    ## <- Aqui modifico la ventana, hay que probar diferentes variantes
+        max_horizon=512,
+        normalize_inputs=True,
+        use_continuous_quantile_head=True,
+        force_flip_invariance=True,
+        infer_is_positive=False,
+        fix_quantile_crossing=True,
+    )
+)
+```
+
+```{python}
+#| label: preparar horizonte de datos temp
+#| echo: false
+#| output: false
+# 3. Preparación de tus datos
+HORIZON = 15 # Tu horizonte de predicción
+
+# Asumimos que df_siniestros ya está cargado y es un DataFrame de pandas
+# con un índice de fecha y una columna con los valores de los siniestros.
+# Por ejemplo: df_siniestros['cantidad_siniestros']
+
+data_temperatura_TFM = df_modelo_temp.copy()
+split_index = int(len(data_temperatura_TFM) * 0.8)
+train_temperatura_TFM = data_temperatura_TFM[:split_index]
+test_temperatura_TFM = data_temperatura_TFM[split_index:]
+# --- ADAPTACIÓN CLAVE ---
+# El modelo necesita los últimos `max_context` (1024) puntos del set de entrenamiento
+# para predecir el futuro.
+contexto_para_predecir = train_temperatura_TFM['Media'][-1024:].to_numpy()
+
+# El modelo espera un formato específico: (batch_size, num_timesteps).
+# En nuestro caso, el batch_size es 1.
+inputs_del_modelo = contexto_para_predecir.reshape(1, -1)
+
+print(f"Forma de los datos de entrada para el modelo: {inputs_del_modelo.shape}")
+```
+
+```{python}
+#| label: generar predicciones
+#| echo: false
+#| output: false
+# 4. Generar la predicción
+# Le pasamos el contexto que preparamos y el horizonte que definimos.
+point_forecast, quantile_forecast = model.forecast(
+    horizon=HORIZON,
+    inputs=inputs_del_modelo
+)
+
+# El resultado 'point_forecast' es un array de numpy.
+# Extraemos la primera (y única) predicción.
+prediccion_temperatura = point_forecast[0]
+
+print(f"Se generaron {len(prediccion_temperatura)} predicciones para los próximos {HORIZON} días.")
+```
+
+```{python}
+#| label: fig-visualizar y comparar timesFM
+#| echo: false
+#| output: true
+
+# 5. Visualizar y comparar
+# Creamos un DataFrame para facilitar la comparación
+df_resultados = pd.DataFrame({
+    'Reales': test_temperatura_TFM['Media'].iloc[:HORIZON].values,
+    'Predichos': prediccion_temperatura
+}, index=test_temperatura_TFM.index[:HORIZON])
+
+
+# Graficamos los resultados
+fig, ax = plt.subplots(figsize=(14, 7), dpi=120)
+
+# Datos de entrenamiento (mostramos una parte para dar contexto)
+ax.plot(train_temperatura_TFM.index[-200:], train_temperatura_TFM['Media'][-200:],
+        ls=':', lw=1, color='silver', label='Datos de Entrenamiento (Contexto)')
+
+# Datos reales del período de prueba
+ax.plot(df_resultados.index, df_resultados['Reales'],
+        ls='--', lw=2, color='cyan', label=f'Temperatura (Test)')
+
+# Predicciones del modelo
+ax.plot(df_resultados.index, df_resultados['Predichos'],
+        ls='-', lw=2, color='orange', label='Predicción TimesFM')
+
+# Línea vertical para marcar el inicio de la predicción
+ax.axvline(train_temperatura_TFM.index[-1], ls='--', lw=1, color='blue', label='Inicio de Predicción')
+
+ax.legend(frameon=False, ncols=4, loc='upper center', bbox_to_anchor=(0.5, 1.1))
+ax.grid(alpha=0.25)
+ax.set_title(f"Predicción de Temperatura con TimesFM (Horizonte: {HORIZON} días)", y=1.08)
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+plt.show()
+```
+
+Métricas
+
+```{python}
+#| label: met_times_fm
+#| echo: false
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
+
+def calcular_metricas_error(y_true, y_pred):
+    """
+    Calcula el Error Absoluto Medio (MAE) y la Raíz del Error Cuadrático Medio (RMSE).
+
+    Args:
+        y_true (array-like): Valores reales u observados.
+        y_pred (array-like): Valores predichos por el modelo.
+
+    Returns:
+        dict: Un diccionario con los valores de 'MAE' y 'RMSE'.
+    """
+    # Corregimos los nombres a los estándares en inglés para usar las librerías
+    # MAE (Mean Absolute Error) = EMA (Error Medio Absoluto)
+    mae = mean_absolute_error(y_true, y_pred)
+
+    # RMSE (Root Mean Squared Error) = RSME
+    # Se calcula la raíz cuadrada del Error Cuadrático Medio (MSE)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+
+    return {'MAE': mae, 'RMSE': rmse}
+
+# --- Ejemplo de uso con tu DataFrame 'df_results' ---
+
+# Suponiendo que 'df_results' ya fue creado en el paso anterior
+# Contiene las columnas 'Reales' y 'Predichos'
+metricas = calcular_metricas_error(df_results['Reales'], df_results['Predichos'])
+
+print(f"Resultados de las métricas de error:")
+print(f"Error Absoluto Medio (MAE): {metricas['MAE']:.2f}")
+print(f"Raíz del Error Cuadrático Medio (RMSE): {metricas['RMSE']:.2f}")
+```
+
+## TimesFM2
+
+```{python}
+#| label: timesFM2_temp
+#| include: false
+#| output: true
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+# Hacemos una copia para no modificar el dataframe original
+df_temp_featured = df_modelo_temp.copy()
+
+# La característica más importante para la temperatura es el ciclo anual.
+# Usamos el día del año y lo transformamos con seno y coseno
+# para que el modelo entienda que el día 365 está cerca del día 1.
+day_of_year = df_temp_featured.index.dayofyear
+df_temp_featured['dayofyear_sin'] = np.sin(2 * np.pi * day_of_year / 365.25)
+df_temp_featured['dayofyear_cos'] = np.cos(2 * np.pi * day_of_year / 365.25)
+
+# También añadimos el día de la semana, que puede capturar patrones semanales
+df_temp_featured['dayofweek'] = df_temp_featured.index.dayofweek
+
+# --- 2. ESCALADO DE TODAS LAS CARACTERÍSTICAS ---
+
+# Definimos la columna objetivo y las características que usaremos
+TARGET_COLUMN_TEMP = 'Media'
+# Nota: La columna objetivo también se escala junto con las demás.
+FEATURES_TEMP = [TARGET_COLUMN_TEMP, 'dayofyear_sin', 'dayofyear_cos', 'dayofweek']
+
+# Creamos y ajustamos el escalador a todas las características
+scaler_temp = StandardScaler()
+df_temp_featured[FEATURES_TEMP] = scaler_temp.fit_transform(df_temp_featured[FEATURES_TEMP])
+
+# --- 3. DIVISIÓN DE DATOS Y PREPARACIÓN DEL INPUT ---
+HORIZON_TEMP = 30
+CONTEXT_WINDOW_TEMP = 730 # Un año de contexto es ideal para capturar la estacionalidad anual
+
+split_index_temp = int(len(df_temp_featured) * 0.8)
+train_data_temp = df_temp_featured[:split_index_temp]
+test_data_temp = df_temp_featured[split_index_temp:]
+
+# Extraer el contexto del final del set de entrenamiento
+context_data_temp = train_data_temp[FEATURES_TEMP][-CONTEXT_WINDOW_TEMP:].to_numpy()
+
+# Transponer para obtener la forma correcta: (num_features, context_length)
+model_inputs_temp = context_data_temp.T
+print(f"Forma de los datos de entrada de Temperatura: {model_inputs_temp.shape}")
+
+# --- 4. CONFIGURACIÓN DEL MODELO Y PREDICCIÓN ---
+
+# Re-compilamos el modelo con la configuración correcta para temperatura
+# La única diferencia es infer_is_positive=False
+model.compile(
+    timesfm.ForecastConfig(
+        max_context=1024,
+        max_horizon=512,
+        normalize_inputs=True,
+        use_continuous_quantile_head=True,
+        force_flip_invariance=True,
+        infer_is_positive=False, # ¡Importante! La temperatura puede ser negativa
+        fix_quantile_crossing=True,
+    )
+)
+
+# Realizar la predicción
+point_forecast_temp, quantile_forecast_temp = model.forecast(
+    horizon=HORIZON_TEMP,
+    inputs=model_inputs_temp
+)
+
+# --- 5. RE-ESCALADO DE LOS RESULTADOS Y VISUALIZACIÓN ---
+
+# El modelo predice valores escalados, ¡debemos revertir la transformación!
+# Creamos un array vacío con la misma forma que los datos originales (N, 4 features)
+predicted_scaled = np.zeros((len(point_forecast_temp[0]), len(FEATURES_TEMP)))
+# Ponemos la predicción en la primera columna (la de la variable objetivo)
+predicted_scaled[:, 0] = point_forecast_temp[0]
+
+# Usamos el método `inverse_transform` del scaler para obtener los valores en la escala original
+predicted_unscaled = scaler_temp.inverse_transform(predicted_scaled)
+
+# La predicción en la escala original está en la primera columna
+predicted_values_temp = predicted_unscaled[:, 0]
+
+# También necesitamos los datos reales sin escalar para comparar
+reales_unscaled = scaler_temp.inverse_transform(
+    test_data_temp[FEATURES_TEMP].iloc[:HORIZON_TEMP]
+)[:, 0]
+
+# Crear DataFrame para graficar
+df_results_temp = pd.DataFrame({
+    'Reales': reales_unscaled,
+    'Predichos': predicted_values_temp
+}, index=test_data_temp.index[:HORIZON_TEMP])
+
+# Graficar
+fig, ax = plt.subplots(figsize=(15, 8))
+ax.plot(df_modelo_temp['Media'][-400:-HORIZON_TEMP], label='Datos de Entrenamiento (Contexto)', color='silver', ls=':')
+ax.plot(df_results_temp['Reales'], label='Temperatura Real (Test)', color='cyan', ls='--', marker='o', markersize=4)
+ax.plot(df_results_temp['Predichos'], label='Predicción TimesFM (Mejorada)', color='orange', ls='-')
+ax.axvline(train_data_temp.index[-1], color='blue', linestyle='--', label='Inicio de Predicción')
+ax.set_title('Predicción de Temperatura con Features Estacionales', fontsize=16)
+ax.set_ylabel('Temperatura (°C)')
+ax.legend()
+ax.grid(alpha=0.3)
+plt.show()
+
+```
+
+```{python}
+#| label: timesFM2 fechas corregidas
+#| include: false
+#| output: true
+# --- 1. FEATURE ENGINEERING (Esto ya estaba correcto) ---
+df_temp_featured = df_modelo_temp.copy()
+day_of_year = df_temp_featured.index.dayofyear
+df_temp_featured['dayofyear_sin'] = np.sin(2 * np.pi * day_of_year / 365.25)
+df_temp_featured['dayofyear_cos'] = np.cos(2 * np.pi * day_of_year / 365.25)
+df_temp_featured['dayofweek'] = df_temp_featured.index.dayofweek
+
+TARGET_COLUMN_TEMP = 'Media'
+FEATURES_TEMP = [TARGET_COLUMN_TEMP, 'dayofyear_sin', 'dayofyear_cos', 'dayofweek']
+HORIZON_TEMP = 180 # Set the prediction horizon to 180 days
+CONTEXT_WINDOW_TEMP = 1095
+
+# --- 2. DIVISIÓN Y ESCALADO CORRECTOS (¡AQUÍ ESTÁ EL CAMBIO!) ---
+
+# **PASO 2.1: PRIMERO, dividimos los datos**
+split_index_temp = int(len(df_temp_featured) * 0.8)
+train_data_temp = df_temp_featured[:split_index_temp].copy() # Usamos .copy() para evitar warnings
+test_data_temp = df_temp_featured[split_index_temp:].copy()
+
+# **PASO 2.2: LUEGO, creamos y AJUSTAMOS el escalador SOLO CON DATOS DE ENTRENAMIENTO**
+scaler_temp = StandardScaler()
+scaler_temp.fit(train_data_temp[FEATURES_TEMP])
+
+# **PASO 2.3: AHORA, transformamos ambos conjuntos de datos por separado**
+train_data_temp[FEATURES_TEMP] = scaler_temp.transform(train_data_temp[FEATURES_TEMP])
+test_data_temp[FEATURES_TEMP] = scaler_temp.transform(test_data_temp[FEATURES_TEMP])
+
+# --- 3. PREPARACIÓN DEL INPUT (Sin cambios, pero ahora usa datos bien escalados) ---
+context_data_temp = train_data_temp[FEATURES_TEMP][-CONTEXT_WINDOW_TEMP:].to_numpy()
+model_inputs_temp = context_data_temp.T
+print(f"Forma de los datos de entrada de Temperatura: {model_inputs_temp.shape}")
+
+# --- 4. CONFIGURACIÓN Y PREDICCIÓN (Sin cambios) ---
+model.compile(
+    timesfm.ForecastConfig(
+        max_context=1024, max_horizon=512, normalize_inputs=True,
+        use_continuous_quantile_head=True, force_flip_invariance=True,
+        infer_is_positive=False, fix_quantile_crossing=True,
+    )
+)
+point_forecast_temp, quantile_forecast_temp = model.forecast(
+    horizon=HORIZON_TEMP, inputs=model_inputs_temp # Use HORIZON_TEMP for the prediction horizon
+)
+
+# --- CORRECCIÓN CLAVE: Construcción robusta del DataFrame de resultados ---
+
+# 1. Obtenemos el índice de fechas exacto para el período de la predicción.
+prediction_index = test_data_temp.index[:HORIZON_TEMP]
+
+# 2. Get the unscaled predicted values
+predicted_scaled = np.zeros((len(point_forecast_temp[0]), len(FEATURES_TEMP)))
+predicted_scaled[:, 0] = point_forecast_temp[0]
+predicted_unscaled = scaler_temp.inverse_transform(predicted_scaled)
+predicted_values_temp = predicted_unscaled[:, 0]
+
+# 3. Obtenemos los valores reales correspondientes a ESE índice desde el DataFrame ORIGINAL (no escalado).
+real_values = df_modelo_temp.loc[prediction_index, TARGET_COLUMN_TEMP]
+
+# 4. Creamos el DataFrame de resultados asegurando que todo esté alineado.
+df_results_temp = pd.DataFrame({
+    'Reales': real_values.values,
+    'Predichos': predicted_values_temp
+}, index=prediction_index)
+
+
+# --- Gráfico Corregido ---
+fig, ax = plt.subplots(figsize=(15, 8))
+
+# Datos de entrenamiento (contexto) - tomados del df original para claridad
+ax.plot(df_modelo_temp[TARGET_COLUMN_TEMP].loc[train_data_temp.index[-400:]], label='Datos de Entrenamiento (Contexto)', color='silver', ls=':')
+
+# Datos de prueba (reales) y la predicción - tomados del nuevo df_results_temp
+ax.plot(df_results_temp.index, df_results_temp['Reales'], label='Temperatura Real (Test)', color='cyan', ls='--', marker='o', markersize=4)
+ax.plot(df_results_temp.index, df_results_temp['Predichos'], label='Predicción TimesFM (Corregida)', color='orange', ls='-')
+
+# Línea vertical de inicio de predicción
+ax.axvline(train_data_temp.index[-1], color='blue', linestyle='--', label='Inicio de Predicción')
+
+# Configuraciones del gráfico
+ax.set_title('Predicción de Temperatura con Fechas Corregidas', fontsize=16)
+ax.set_ylabel('Temperatura (°C)')
+ax.legend()
+ax.grid(alpha=0.3)
+plt.show()# --- 1. FEATURE ENGINEERING (Esto ya estaba correcto) ---
+df_temp_featured = df_modelo_temp.copy()
+day_of_year = df_temp_featured.index.dayofyear
+df_temp_featured['dayofyear_sin'] = np.sin(2 * np.pi * day_of_year / 365.25)
+df_temp_featured['dayofyear_cos'] = np.cos(2 * np.pi * day_of_year / 365.25)
+df_temp_featured['dayofweek'] = df_temp_featured.index.dayofweek
+
+TARGET_COLUMN_TEMP = 'Media'
+FEATURES_TEMP = [TARGET_COLUMN_TEMP, 'dayofyear_sin', 'dayofyear_cos', 'dayofweek']
+HORIZON_TEMP = 180 # Set the prediction horizon to 180 days
+CONTEXT_WINDOW_TEMP = 1095
+
+# --- 2. DIVISIÓN Y ESCALADO CORRECTOS (¡AQUÍ ESTÁ EL CAMBIO!) ---
+
+# **PASO 2.1: PRIMERO, dividimos los datos**
+split_index_temp = int(len(df_temp_featured) * 0.8)
+train_data_temp = df_temp_featured[:split_index_temp].copy() # Usamos .copy() para evitar warnings
+test_data_temp = df_temp_featured[split_index_temp:].copy()
+
+# **PASO 2.2: LUEGO, creamos y AJUSTAMOS el escalador SOLO CON DATOS DE ENTRENAMIENTO**
+scaler_temp = StandardScaler()
+scaler_temp.fit(train_data_temp[FEATURES_TEMP])
+
+# **PASO 2.3: AHORA, transformamos ambos conjuntos de datos por separado**
+train_data_temp[FEATURES_TEMP] = scaler_temp.transform(train_data_temp[FEATURES_TEMP])
+test_data_temp[FEATURES_TEMP] = scaler_temp.transform(test_data_temp[FEATURES_TEMP])
+
+# --- 3. PREPARACIÓN DEL INPUT (Sin cambios, pero ahora usa datos bien escalados) ---
+context_data_temp = train_data_temp[FEATURES_TEMP][-CONTEXT_WINDOW_TEMP:].to_numpy()
+model_inputs_temp = context_data_temp.T
+print(f"Forma de los datos de entrada de Temperatura: {model_inputs_temp.shape}")
+
+# --- 4. CONFIGURACIÓN Y PREDICCIÓN (Sin cambios) ---
+model.compile(
+    timesfm.ForecastConfig(
+        max_context=1024, max_horizon=512, normalize_inputs=True,
+        use_continuous_quantile_head=True, force_flip_invariance=True,
+        infer_is_positive=False, fix_quantile_crossing=True,
+    )
+)
+point_forecast_temp, quantile_forecast_temp = model.forecast(
+    horizon=HORIZON_TEMP, inputs=model_inputs_temp # Use HORIZON_TEMP for the prediction horizon
+)
+
+# --- CORRECCIÓN CLAVE: Construcción robusta del DataFrame de resultados ---
+
+# 1. Obtenemos el índice de fechas exacto para el período de la predicción.
+prediction_index = test_data_temp.index[:HORIZON_TEMP]
+
+# 2. Get the unscaled predicted values
+predicted_scaled = np.zeros((len(point_forecast_temp[0]), len(FEATURES_TEMP)))
+predicted_scaled[:, 0] = point_forecast_temp[0]
+predicted_unscaled = scaler_temp.inverse_transform(predicted_scaled)
+predicted_values_temp = predicted_unscaled[:, 0]
+
+# 3. Obtenemos los valores reales correspondientes a ESE índice desde el DataFrame ORIGINAL (no escalado).
+real_values = df_modelo_temp.loc[prediction_index, TARGET_COLUMN_TEMP]
+
+# 4. Creamos el DataFrame de resultados asegurando que todo esté alineado.
+df_results_temp = pd.DataFrame({
+    'Reales': real_values.values,
+    'Predichos': predicted_values_temp
+}, index=prediction_index)
+
+
+
+```
+
+```{python}
+#| label: fig-temp_times_fm2w
+#| echo: false
+# --- Gráfico Corregido ---
+fig, ax = plt.subplots(figsize=(15, 8))
+
+# Datos de entrenamiento (contexto) - tomados del df original para claridad
+ax.plot(df_modelo_temp[TARGET_COLUMN_TEMP].loc[train_data_temp.index[-400:]], label='Datos de Entrenamiento (Contexto)', color='silver', ls=':')
+
+# Datos de prueba (reales) y la predicción - tomados del nuevo df_results_temp
+ax.plot(df_results_temp.index, df_results_temp['Reales'], label='Temperatura Real (Test)', color='cyan', ls='--', marker='o', markersize=4)
+ax.plot(df_results_temp.index, df_results_temp['Predichos'], label='Predicción TimesFM (Corregida)', color='orange', ls='-')
+
+# Línea vertical de inicio de predicción
+ax.axvline(train_data_temp.index[-1], color='blue', linestyle='--', label='Inicio de Predicción')
+
+# Configuraciones del gráfico
+ax.set_title('Predicción de Temperatura con Fechas Corregidas', fontsize=16)
+ax.set_ylabel('Temperatura (°C)')
+ax.legend()
+ax.grid(alpha=0.3)
+plt.show()
+```
+
+Métricas
+
+```{python}
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
+
+def calcular_metricas_error(y_true, y_pred):
+    """
+    Calcula el Error Absoluto Medio (MAE) y la Raíz del Error Cuadrático Medio (RMSE).
+
+    Args:
+        y_true (array-like): Valores reales u observados.
+        y_pred (array-like): Valores predichos por el modelo.
+
+    Returns:
+        dict: Un diccionario con los valores de 'MAE' y 'RMSE'.
+    """
+    # Corregimos los nombres a los estándares en inglés para usar las librerías
+    # MAE (Mean Absolute Error) = EMA (Error Medio Absoluto)
+    mae = mean_absolute_error(y_true, y_pred)
+
+    # RMSE (Root Mean Squared Error) = RSME
+    # Se calcula la raíz cuadrada del Error Cuadrático Medio (MSE)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+
+    return {'MAE': mae, 'RMSE': rmse}
+
+# --- Ejemplo de uso con tu DataFrame 'df_results' ---
+
+# Suponiendo que 'df_results' ya fue creado en el paso anterior
+# Contiene las columnas 'Reales' y 'Predichos'
+metricas = calcular_metricas_error(df_results['Reales'], df_results['Predichos'])
+
+print(f"Resultados de las métricas de error:")
+print(f"Error Absoluto Medio (MAE): {metricas['MAE']:.2f}")
+print(f"Raíz del Error Cuadrático Medio (RMSE): {metricas['RMSE']:.2f}")
+```
+
+## completar por aqui
+
+## CHRONOS
+
+Utilizando los modelos Chronos entrenamos dos modelos, el primero de ellos no lo consideramos apropiado para exponer en el trabajo, pero su desarrollo se encuentra el cuaderno de colab para su cheque. Debido a esto se decidió incluir en el presente trabajo el modelo que denominamos Chronos_2 y que se encuentra a continuación.
+
+```{python}
+#| label: CHRONOS_Temp
+#| include: false
+#| output: true
+df_modelo_temp_chronos = df_modelo_temp.copy()
+## Parametros de prediccion
+step_to_predict= 45  # Da la cantidad de pasos hacia adelante que vamos a predecir
+samples_to_consider= 2 # Simula 5 futuros posibles para entender mejor lo que puede pasar
+
+## Proyeccion
+forecast = pipeline.predict(
+    context=torch.tensor(df_modelo_temp_chronos["Media"]),
+    prediction_length=step_to_predict,
+    num_samples=samples_to_consider,
+)
+
+forecast_index = range(len(df_modelo_temp_chronos), len(df_modelo_temp_chronos) + step_to_predict)
+low, median, high = np.quantile(forecast[0].numpy(), [0.1, 0.5, 0.9], axis=0)
+
+predicted_mean = forecast.mean(axis=0)
+
+# Grafico
+plt.figure(figsize=(8, 4))
+plt.plot(df_modelo_temp_chronos["Media"], color="royalblue", label="Media")
+# Modified: Plot the median prediction starting from the end of the historical data index
+plt.plot(df_siniestros.index[-1] + pd.to_timedelta(np.arange(1, step_to_predict + 1), unit='D'), median, color="tomato", label="Temperatura media")
+plt.fill_between(df_siniestros.index[-1] + pd.to_timedelta(np.arange(1, step_to_predict + 1), unit='D'), low, high, color="tomato", alpha=0.3, label="80% Intervalo Prediccion")
+plt.legend()
+plt.grid()
+plt.show()
+
+```
+
+## CHRONOS 2
+
+```{python}
+#| label: CHRONOS_2_Temp
+#| include: false
+#| output: true
+
+
+n_test = 25
+df_temperatura_chronos_train = df_modelo_temp_chronos[:-n_test]
+df_temperatura_chronos_test = df_modelo_temp_chronos [-n_test:]
+
+fechas_train = df_temperatura_chronos_train.index
+fechas_test = df_temperatura_chronos_test.index
+
+plt.figure(figsize=(12, 5))
+
+plt.plot(fechas_train, df_temperatura_chronos_train["Media"], label="Entrenamiento", color="blue")
+plt.plot(fechas_test, df_temperatura_chronos_test["Media"], label="Test real", color="green")
+
+
+```
+
+```{python}
+#| label: CHRONOS 2 - codigo
+#| include: false
+#| output: true
+
+pipeline = BaseChronosPipeline.from_pretrained(
+    "amazon/chronos-t5-small",
+    device_map="cpu",
+    torch_dtype=torch.bfloat16,
+)
+
+quantiles, mean = pipeline.predict_quantiles(
+    context=torch.tensor(df_temperatura_chronos_train["Media"]),
+    prediction_length=n_test,
+    quantile_levels=[0.1, 0.5, 0.9],
+)
+
+from chronos import ChronosPipeline, ChronosBoltPipeline
+
+import matplotlib.pyplot as plt
+from datetime import timedelta
+import numpy as np # Import numpy
+
+# Extract quantiles and median from the prediction results
+low, median, high = quantiles[0, :, 0], quantiles[0, :, 1], quantiles[0, :, 2]
+
+# Get the actual values from the test set
+actual = df_temperatura_chronos_test["Media"].values
+
+# Get the last date from the training set index
+last_train_date = fechas_train[-1]
+
+# Create a date range for the forecast starting from the day after the last training date
+# The length of the forecast dates should match the length of the median prediction
+forecast_dates = [last_train_date + timedelta(days=i) for i in range(1, len(median) + 1)]
+
+
+
+
+```
+
+```{python}
+#| label: fig-chronos2_i6
+#| echo: false
+plt.figure(figsize=(12, 5))
+
+plt.plot(fechas_train, df_temperatura_chronos_train["Media"], color="royalblue", label="Datos históricos")
+plt.plot(forecast_dates, median, color="tomato", label="Predicción (mediana)")
+plt.fill_between(forecast_dates, low, high, color="tomato", alpha=0.3, label="Intervalo 80%")
+plt.plot(fechas_test, actual, color="green", linestyle="--", marker="o", label="Datos reales (test)")
+
+plt.legend()
+plt.grid()
+plt.title("Predicción vs Real - Chronos Temperatura Media")
+plt.xlabel("Fecha")
+plt.ylabel("Temperatura Media")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+Métricas
+
+```{python}
+#| label: CHRONOS 2 - metricas
+#| echo: false
+#| output: true
+
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import numpy as np
+
+# Calculate RMSE for Chronos
+rmse_chronos = np.sqrt(mean_squared_error(actual, median))
+
+# Calculate MAE for Chronos
+mae_chronos = mean_absolute_error(actual, median)
+
+print(f"Chronos Model RMSE on Test Set: {rmse_chronos:0.2f}")
+print(f"Chronos Model MAE on Test Set: {mae_chronos:0.2f}")
+```
+
+A diferencia de su desempeño en las otras series, Chronos brilló en la predicción de la temperatura, obteniendo un resultado sobresaliente:
+
+Error Absoluto Medio (MAE): completar_aqui
+
+Raíz del Error Cuadrático Medio (RMSE): completar_aqui
+
+Con un MAE de completar_aqui °C, Chronos supera ligeramente a XGBoost y se posiciona como el mejor modelo hasta ahora para esta serie. Esto es significativo porque lo logró sin ninguna ingeniería de características manual.
+
+El gráfico Predicción vs Real - Chronos muestra por qué Chronos tuvo tanto éxito. La predicción (línea naranja) se ajusta de manera casi perfecta a los datos reales (puntos verdes). El modelo fue capaz de identificar y extrapolar el ciclo estacional de la temperatura con una precisión asombrosa, simplemente analizando la secuencia de datos históricos.
+
+## TEMP - AUTOML
+
+```{python}
+#| label: TEMP - AUTOTS
+#| echo: false
+#| output: false
+import time # Import the time module
+# AUTOTS APLICADO A TEMPERATURA
+
+print("\n--- Iniciando análisis de Temperatura con AutoTS (Versión Rápida) ---")
+
+# Usamos una copia para asegurar que el DataFrame original no se modifica
+df_target = df_modelo_temp.copy()
+target_col = 'Media'
+
+# Convertir el índice 'fecha' en una columna
+df_target.reset_index(inplace=True)
+
+# División 80/20 para entrenamiento y prueba
+split_point = math.trunc(len(df_target) * 0.8)
+train_data = df_target.iloc[:split_point]
+test_data = df_target.iloc[split_point:]
+print(f"Tamaño de entrenamiento: {len(train_data)}, Tamaño de prueba: {len(test_data)}")
+
+
+model_temp_autots = AutoTS(
+    forecast_length=len(test_data),
+    frequency='D',
+    prediction_interval=0.95,
+    ensemble='simple',
+    model_list='fast',
+    max_generations=3,
+    num_validations=1,
+    no_negatives=False,
+    n_jobs='auto'
+)
+
+
+print("\nEntrenando modelo AutoTS para Temperatura...")
+start_time = time.time() # Start the timer
+model_temp_autots.fit(train_data, date_col='fecha', value_col=target_col)
+end_time = time.time() # Stop the timer
+print(f"Tiempo de entrenamiento del modelo AutoTS: {end_time - start_time:.2f} segundos") # Print the elapsed time
+
+# Predicción
+prediction = model_temp_autots.predict()
+forecast = prediction.forecast
+
+# Preparar el DataFrame de test para graficar
+test_data.set_index('fecha', inplace=True)
+
+
+```
+
+```{python}
+#| label: TEMP - AUTOTS - METRICAS
+#| echo: false
+#| output: true
+# Evaluación y almacenamiento de métricas
+print("\n--- Resumen del Modelo Seleccionado ---")
+print(model_temp_autots)
+mae = mean_absolute_error(test_data[target_col], forecast[target_col])
+rmse = np.sqrt(mean_squared_error(test_data[target_col], forecast[target_col]))
+autots_results_summary['Temperatura'] = {'MAE': mae, 'RMSE': rmse}
+print(f"\n--- Métricas en Test --- \nMAE: {mae:.4f} \nRMSE: {rmse:.4f}")
+```
+
+```{python}
+#| label: fig-TEMP - AUTOTS - VISUALIZACION
+#| echo: false
+#| output: true
+# Visualización
+fig, ax = plt.subplots(figsize=(18, 6))
+# Añadimos un poco de transparencia (alpha) a los datos reales para ver mejor la predicción
+ax.plot(test_data.index, test_data[target_col], label='Datos Reales (Test)', color='orange', alpha=0.7)
+ax.plot(forecast.index, forecast[target_col], label='Predicción AutoTS', color='green', linewidth=2)
+
+lower_forecast = prediction.lower_forecast
+upper_forecast = prediction.upper_forecast
+ax.fill_between(forecast.index, lower_forecast[target_col], upper_forecast[target_col], color='green', alpha=0.2, label='Intervalo 95%')
+
+ax.set_title('Predicción vs. Real para Temperatura Media (AutoTS)', fontsize=16) # <-- CAMBIO: Título
+ax.set_ylabel('Temperatura (°C)')
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+```
+
+El modelo AutoML (AutoTS) fue el ganador, logrando el menor error (MAE de completar_aqui °C).
+
+El gráfico Predicción vs. Real para Temperatura Media (AutoTS) muestra una estrategia muy efectiva. La predicción de AutoTS (línea verde) es una curva sinusoidal perfecta que representa el ciclo estacional anual ideal. Esta predicción ignora por completo las fluctuaciones y el "ruido" diario de la temperatura real. Al promediar estos picos y valles, logra el error promedio más bajo de todos.
+
+Para series fuertemente estacionales y predecibles como la temperatura, todos los modelos modernos funcionan excepcionalmente bien. El enfoque de modelar la curva estacional subyacente de forma suave, como hizo AutoTS, demostró ser el más robusto para minimizar el error promedio.
+
+# **Series Unificadas**
+
+Analizando e ideando maneras de poder mejorar los modelos, decidimos experimentar con un modelo que contenga todas las variables de los datasets y que el mismo sea entrenado para predecir la variable siniestros, buscando comprobar si al tener en cuenta más variables el modelo mejora.
+
+```{python}
+#| include: false
+print(df_siniestros.head(2))
+print(df_temperatura.head(2))
+print(df_precipitaciones.head(2))
+for df in [df_siniestros, df_temperatura, df_precipitaciones]:
+    df.index = pd.to_datetime(df.index)
+```
+
+```{python}
+#| include: false
+series_unificadas = pd.concat([df_siniestros, df_temperatura, df_precipitaciones], axis=1)
+series_unificadas.head()
+fecha_limite = pd.to_datetime("2023-12-31")
+series_unificadas = series_unificadas[series_unificadas.index <= fecha_limite]
+```
+
+```{python}
+#| include: false
+series_unificadas['day_name']= series_unificadas.index.day_name()
+series_unificadas['mes']= series_unificadas.index.month
+series_unificadas['dia']= series_unificadas.index.day
+
+
+fin_de_semana=['Saturday', 'Sunday']
+series_unificadas['fin_de_semana'] = series_unificadas['day_name'].isin(fin_de_semana).astype(int)
+import holidays
+
+# Asegurate de que el índice contiene fechas tipo datetime
+series_unificadas.index = pd.to_datetime(series_unificadas.index)
+
+# Crear lista de años únicos del índice
+años = series_unificadas.index.year.unique()
+
+# Crear objeto de feriados para Argentina para esos años
+ar_holidays = holidays.country_holidays('AR', years=años)
+
+# Marcar feriados basados en el índice
+series_unificadas['feriado'] = series_unificadas.index.isin(ar_holidays).astype(int)
+
+# También podés marcar fines de semana usando el índice
+series_unificadas['fin_de_semana'] = series_unificadas.index.dayofweek.isin([5, 6]).astype(int)
+```
+
+```{python}
+#| include: false
+
+series_unificadas[series_unificadas['feriado'] == 1]
+```
+
+```{python}
+#| include: false
+series_unificadas['lluvia'] = (series_unificadas['(mm)'] > 0).astype(int)
+```
+
+```{python}
+#| include: false
+def clasificar_lluvia(mm):
+    if mm >= 0 and mm <= 0.09:
+        return 'sin lluvia'
+    elif mm >= 0.1 and mm <= 2:
+        return 'debil'
+    elif mm >= 2.1 and mm <= 15:
+        return 'moderado'
+    elif mm >= 15.1 and mm <= 30:
+        return 'fuerte'
+    elif mm >= 30.1 and mm<-60:
+        return 'muy fuerte'
+    else:
+        return 'torrencial'
+```
+
+```{python}
+#| include: false
+
+series_unificadas['intensidad']= series_unificadas['(mm)'].apply (clasificar_lluvia)
+```
+
+```{python}
+#| include: false
+series_unificadas.index = pd.to_datetime(series_unificadas.index)
+print(series_unificadas.index)           # Muestra los valores del índice
+print(type(series_unificadas.index))     # Muestra el tipo,
+```
+
+```{python}
+#| include: false
+def estacion(fecha):
+    """
+    Recibe una fecha (datetime) y retorna la estación del año en el hemisferio sur.
+    """
+    año = fecha.year
+
+    # Fechas de cambio de estación
+    verano_ini = pd.Timestamp(year=año, month=12, day=21)
+    verano_fin = pd.Timestamp(year=año, month=3, day=20)
+    otoño_ini = pd.Timestamp(year=año, month=3, day=21)
+    otoño_fin = pd.Timestamp(year=año, month=6, day=20)
+    invierno_ini = pd.Timestamp(year=año, month=6, day=21)
+    invierno_fin = pd.Timestamp(year=año, month=9, day=20)
+    primavera_ini = pd.Timestamp(year=año, month=9, day=21)
+    primavera_fin = pd.Timestamp(year=año, month=12, day=20)
+
+    # Verano (del 21 de dic al 20 de marzo del siguiente año)
+    if (fecha >= verano_ini) or (fecha <= verano_fin):
+        return "verano"
+    # Otoño
+    elif (fecha >= otoño_ini) and (fecha <= otoño_fin):
+        return "otoño"
+    # Invierno
+    elif (fecha >= invierno_ini) and (fecha <= invierno_fin):
+        return "invierno"
+    # Primavera
+    elif (fecha >= primavera_ini) and (fecha <= primavera_fin):
+        return "primavera"
+    else:
+        return "indefinido"
+
+# Para mapear el índice de un DataFrame llamado df:
+series_unificadas['estacion'] = series_unificadas.index.map(estacion)
+```
+
+```{python}
+#| include: false
+end_train = '2022-12-31'
+end_validation = '2023-12-31'
+data_train = series_unificadas.loc[: end_train, :]
+data_val   = series_unificadas.loc[end_train:end_validation, :]
+data_test  = series_unificadas.loc[end_validation:, :]
+```
+
+```{python}
+#| include: false
+
+forecaster = ForecasterRecursive(
+                 regressor = XGBRegressor(random_state=123),
+                 lags = 24
+             )
+```
+
+```{python}
+#| include: false
+#Lags grid
+lags_grid = [24, 48, 72,96]
+
+# Regressor hyperparameters search space
+def search_space(trial):
+    search_space  = {
+        'n_estimators'    : trial.suggest_int('n_estimators', 400, 1200, step=100),
+        'max_depth'       : trial.suggest_int('max_depth', 3, 10, step=1),
+        'learning_rate'   : trial.suggest_float('learning_rate', 0.01, 1),
+        'subsample'       : trial.suggest_float('subsample', 0.1, 1),
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.1, 1),
+        'gamma'           : trial.suggest_float('gamma', 0, 1),
+        'reg_alpha'       : trial.suggest_float('reg_alpha', 0, 1),
+        'reg_lambda'      : trial.suggest_float('reg_lambda', 0, 1),
+        'lags'            : trial.suggest_categorical('lags', lags_grid)
+    }
+    return search_space
+
+# Folds
+cv_searh = TimeSeriesFold(
+                steps              = 36, #Define cuántos puntos de datos forman el conjunto de prueba en cada fold.
+                initial_train_size = len(data_train), #El primer fold usa todo data_train como entrenamiento inicial
+                refit              = False, #El modelo se entrena una sola vez al inicio con los set de train y luego se evalúa en cada fold sin reentrenarse.
+            )
+
+results_search, frozen_trial = bayesian_search_forecaster(
+                                    forecaster    = forecaster,
+                                    y             = series_unificadas.loc[:end_validation, 'cantidad_eventos'],
+                                    search_space  = search_space,
+                                    cv            = cv_searh,
+                                    metric        = 'mean_absolute_error',
+                                    n_trials      = 20,
+                                    random_state  = 123,
+                                    return_best   = True,
+                                    n_jobs        = 'auto',
+                                    verbose       = False,
+                                    show_progress = True
+                                )
+best_params = results_search['params'].iat[0]
+best_lags = results_search['lags'].iat[0]
+```
+
+```{python}
+#| include: false
+
+results_search.head(3)
+     
+```
+
+```{python}
+#| include: false
+# Deja al menos 36 observaciones para test
+initial_train_size = len(series_unificadas) - 36
+print(initial_train_size)  # Esto será 1826 - 36 = 1790
+
+# Ahora obtén la fecha correspondiente para ese corte:
+fecha_cut = series_unificadas.index[initial_train_size - 1]  # El -1 porque los índices son 0-based
+print(fecha_cut)  # Te dará la fecha que corresponde a ese punto
+```
+
+```{python}
+#| include: false
+end_validation = fecha_cut
+
+cv = TimeSeriesFold(
+    steps=36,
+    initial_train_size=initial_train_size,
+    refit=False,
+)
+
+metric, predictions = backtesting_forecaster(
+    forecaster=forecaster,
+    y=series_unificadas['cantidad_eventos'],
+    cv=cv,
+    metric='mean_absolute_error',
+    n_jobs='auto',
+    verbose=False,
+    show_progress=True
+)
+     
+```
+
+```{python}
+#| include: false
+end_validation = '2023-12-31'
+initial_train_size = len(series_unificadas.loc[:end_validation])  # Debe ser < 1826
+print(initial_train_size)
+```
+
+```{python}
+#| include: false
+
+display(metric)
+predictions.head()
+```
+
+```{python}
+#| label: fig-serie_unificada_1
+#| echo: false
+import plotly.graph_objects as go
+
+# Si tu columna de predicción en predictions no se llama 'pred', reemplázala por el nombre correcto, por ejemplo 'prediction'
+
+fig = go.Figure()
+
+# Serie real del test
+trace_real = go.Scatter(
+    x=series_unificadas.index,
+    y=series_unificadas['cantidad_eventos'],
+    name="Real (Test)",
+    mode="lines"
+)
+
+# Predicción
+trace_pred = go.Scatter(
+    x=predictions.index,
+    y=predictions['pred'],  # Cambia 'pred' por el nombre real de la columna si es distinto
+    name="Predicción",
+    mode="lines"
+)
+
+fig.add_trace(trace_real)
+fig.add_trace(trace_pred)
+
+fig.update_layout(
+    title="Real value vs predicted in test data",
+    xaxis_title="Fecha",
+    yaxis_title="Cantidad de eventos",
+    width=750,
+    height=350,
+    margin=dict(l=20, r=20, t=35, b=20),
+    legend=dict(orientation="h", yanchor="top", y=1.1, xanchor="left", x=0.001)
+)
+
+fig.show()
+```
+
+```{python}
+#| include: false
+series_unificadas["day_name"]  = series_unificadas["day_name"].astype("category")
+series_unificadas["mes"]       = series_unificadas["mes"].astype("category")
+series_unificadas["intensidad"]= series_unificadas["intensidad"].astype("category")
+series_unificadas["estacion"]  = series_unificadas["estacion"].astype("category")
+
+# Opcional: binarios como categoría
+series_unificadas["fin_de_semana"] = series_unificadas["fin_de_semana"].astype("category")
+series_unificadas["feriado"]       = series_unificadas["feriado"].astype("category")
+series_unificadas["lluvia"]        = series_unificadas["lluvia"].astype("category")
+     
+```
+
+```{python}
+#| include: false
+one_hot_encoder = make_column_transformer(
+                      (
+                          OneHotEncoder(sparse_output=False, drop='if_binary'),
+                          make_column_selector(dtype_exclude=np.number),
+                      ),
+                      remainder="passthrough",
+                      verbose_feature_names_out=False,
+                  ).set_output(transform="pandas")
+```
+
+```{python}
+#| include: false
+forecaster = ForecasterRecursive(
+                 regressor        = XGBRegressor(random_state=123),
+                 lags             = 24,
+                 transformer_exog = one_hot_encoder
+             )
+```
+
+```{python}
+#| include: false
+# Lista de variables exógenas (ajusta según lo que quieras usar)
+exog_features = [
+    'Maxima',
+    'Minima',
+    'Media',
+    '(mm)',
+    'day_name',
+    'mes',
+    'fin_de_semana',
+    'feriado',
+    'lluvia',
+    'intensidad',
+    'estacion'
+]
+
+X_train, y_train = forecaster.create_train_X_y(
+    y=series_unificadas.loc[:end_validation, 'cantidad_eventos'],
+    exog=series_unificadas.loc[:end_validation, exog_features]
+)
+
+X_train.sample(20)
+```
+
+```{python}
+#| include: false
+from xgboost import XGBRegressor
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.metrics import mean_absolute_error
+import plotly.graph_objects as go
+
+# 1. Conversión de variables categóricas
+categorical_cols = ['day_name', 'mes', 'intensidad', 'estacion', 'fin_de_semana', 'feriado', 'lluvia']
+for col in categorical_cols:
+    series_unificadas[col] = series_unificadas[col].astype('category')
+
+# 2. Definir variables exógenas
+exog_features = [
+    'Maxima',
+    'Minima',
+    'Media',
+    '(mm)',
+    'day_name',
+    'mes',
+    'fin_de_semana',
+    'feriado',
+    'lluvia',
+    'intensidad',
+    'estacion'
+]
+
+# 3. Definir fechas de corte para el test de 20 días
+series_unificadas.index = pd.to_datetime(series_unificadas.index)
+
+end_validation = '2023-11-30'
+fecha_inicio_test = pd.to_datetime(end_validation) + pd.Timedelta(days=1)
+fecha_fin_test = fecha_inicio_test + pd.Timedelta(days=19)  # 20 días en total
+
+data_train = series_unificadas.loc[:end_validation, :]
+data_test = series_unificadas.loc[fecha_inicio_test:fecha_fin_test, :]
+
+# 4. Codificar variables categóricas
+encoder = OrdinalEncoder()
+data_train_encoded = data_train.copy()
+data_test_encoded = data_test.copy()
+
+data_train_encoded[categorical_cols] = encoder.fit_transform(data_train[categorical_cols])
+data_test_encoded[categorical_cols]  = encoder.transform(data_test[categorical_cols])
+
+# 5. Datos de entrenamiento y test
+X_train = data_train_encoded[exog_features]
+y_train = data_train_encoded['cantidad_eventos']
+X_test = data_test_encoded[exog_features]
+y_test = data_test_encoded['cantidad_eventos']
+
+# 6. Entrenamiento del modelo XGBoost
+model = XGBRegressor(n_estimators=400, max_depth=6, learning_rate=0.1, random_state=123)
+model.fit(X_train, y_train)
+
+```
+
+```{python}
+#| label: fig-serie_unifcq8
+#| echo: false
+# 7. Predicción sobre el test
+y_pred_test = model.predict(X_test)
+
+# 8. Visualización con Plotly
+fig = go.Figure()
+fig.add_trace(go.Scatter(
+    x=data_test.index,
+    y=y_test,
+    name="Real (Test)",
+    mode="lines"
+))
+fig.add_trace(go.Scatter(
+    x=data_test.index,
+    y=y_pred_test,
+    name="Predicción",
+    mode="lines"
+))
+fig.update_layout(
+    title="Real vs Predicción - 20 Días de Test",
+    xaxis_title="Fecha",
+    yaxis_title="Cantidad de eventos",
+    width=750,
+    height=350,
+    margin=dict(l=20, r=20, t=35, b=20),
+    legend=dict(orientation="h", yanchor="top", y=1.1, xanchor="left", x=0.001)
+)
+fig.show()
+
+# 9. Cálculo del MAE en test
+mae_test = mean_absolute_error(y_test, y_pred_test)
+print("MAE en test (20 días):", mae_test)
+```
+
+```{python}
+#| include: false
+from lightgbm import LGBMRegressor
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.metrics import mean_absolute_error
+import plotly.graph_objects as go
+
+# 1. Conversión de variables categóricas
+categorical_cols = ['day_name', 'mes', 'intensidad', 'estacion', 'fin_de_semana', 'feriado', 'lluvia']
+for col in categorical_cols:
+    series_unificadas[col] = series_unificadas[col].astype('category')
+
+# 2. Definir variables exógenas
+exog_features = [
+    'Maxima',
+    'Minima',
+    'Media',
+    '(mm)',
+    'day_name',
+    'mes',
+    'fin_de_semana',
+    'feriado',
+    'lluvia',
+    'intensidad',
+    'estacion'
+]
+
+# 3. Definir fechas de corte para el test de 20 días
+series_unificadas.index = pd.to_datetime(series_unificadas.index)
+
+end_validation = '2023-11-30'
+fecha_inicio_test = pd.to_datetime(end_validation) + pd.Timedelta(days=1)
+fecha_fin_test = fecha_inicio_test + pd.Timedelta(days=19)  # 20 días en total
+
+data_train = series_unificadas.loc[:end_validation, :]
+data_test = series_unificadas.loc[fecha_inicio_test:fecha_fin_test, :]
+
+# 4. Codificar variables categóricas
+encoder = OrdinalEncoder()
+data_train_encoded = data_train.copy()
+data_test_encoded = data_test.copy()
+
+data_train_encoded[categorical_cols] = encoder.fit_transform(data_train[categorical_cols])
+data_test_encoded[categorical_cols]  = encoder.transform(data_test[categorical_cols])
+
+# 5. Datos de entrenamiento y test
+X_train = data_train_encoded[exog_features]
+y_train = data_train_encoded['cantidad_eventos']
+X_test = data_test_encoded[exog_features]
+y_test = data_test_encoded['cantidad_eventos']
+
+# 6. Entrenamiento del modelo LightGBM
+model = LGBMRegressor(n_estimators=400, max_depth=6, learning_rate=0.1, random_state=123)
+model.fit(X_train, y_train)
+
+# 7. Predicción sobre el test
+y_pred_test = model.predict(X_test)
+
+
+```
+
+```{python}
+#| label: fig-su_p0
+#| echo: false
+#| warning: false
+# 8. Visualización con Plotly
+fig = go.Figure()
+fig.add_trace(go.Scatter(
+    x=data_test.index,
+    y=y_test,
+    name="Real (Test)",
+    mode="lines"
+))
+fig.add_trace(go.Scatter(
+    x=data_test.index,
+    y=y_pred_test,
+    name="Predicción",
+    mode="lines"
+))
+fig.update_layout(
+    title="Real vs Predicción - 20 Días de Test (LightGBM)",
+    xaxis_title="Fecha",
+    yaxis_title="Cantidad de eventos",
+    width=750,
+    height=350,
+    margin=dict(l=20, r=20, t=35, b=20),
+    legend=dict(orientation="h", yanchor="top", y=1.1, xanchor="left", x=0.001)
+)
+fig.show()
+
+# 9. Cálculo del MAE en test
+mae_test = mean_absolute_error(y_test, y_pred_test)
+print("MAE en test (20 días, LightGBM):", mae_test)
+```
+
+```{python}
+#| include: false
+from sklearn.preprocessing import StandardScaler
+
+
+# --- 1. CONFIGURACIÓN ---
+TARGET_COLUMN = 'cantidad_eventos'  # Cambia si tu target es otro
+FEATURES = [TARGET_COLUMN, 'Maxima', 'Minima', 'Media', '(mm)', 'mes', 'fin_de_semana', 'feriado', 'lluvia']
+HORIZON = 20       # Predicción para 20 días
+CONTEXT_WINDOW = 365  # Usar 1 año de contexto
+
+# --- 2. DIVISIÓN Y ESCALADO ---
+split_index = int(len(series_unificadas) * 0.8)
+train_data = series_unificadas[:split_index].copy()
+test_data = series_unificadas[split_index:].copy()
+
+scaler = StandardScaler()
+scaler.fit(train_data[FEATURES])
+
+train_data[FEATURES] = scaler.transform(train_data[FEATURES])
+test_data[FEATURES] = scaler.transform(test_data[FEATURES])
+
+# --- 3. PREPARACIÓN DEL INPUT ---
+context_data = train_data[FEATURES][-CONTEXT_WINDOW:].to_numpy()
+model_inputs = context_data.T
+print(f"Forma de los datos de entrada: {model_inputs.shape}")
+
+# --- 4. CONFIGURACIÓN Y PREDICCIÓN ---
+# Simulación de predicción, reemplaza esto por tu modelo real:
+# Ejemplo: model.compile(...), model.forecast(horizon=HORIZON, inputs=model_inputs)
+# Aquí solo simulo una predicción aleatoria para mostrar la estructura:
+point_forecast = np.random.randn(1, HORIZON)  # <-- Reemplázalo por point_forecast = model.forecast(...)
+# Ejemplo: point_forecast, quantile_forecast = model.forecast(horizon=HORIZON, inputs=model_inputs)
+
+# --- 5. Construcción robusta del DataFrame de resultados ---
+prediction_index = test_data.index[:HORIZON]
+
+predicted_scaled = np.zeros((len(point_forecast[0]), len(FEATURES)))
+predicted_scaled[:, 0] = point_forecast[0]
+predicted_unscaled = scaler.inverse_transform(predicted_scaled)
+predicted_values = predicted_unscaled[:, 0]
+
+real_values = series_unificadas.loc[prediction_index, TARGET_COLUMN]
+
+df_results = pd.DataFrame({
+    'Reales': real_values.values,
+    'Predichos': predicted_values
+}, index=prediction_index)
+
+
+```
+
+```{python}
+#| label: fig-serunif_l9
+#| echo: false
+# --- 6. Gráfico Corregido ---
+fig, ax = plt.subplots(figsize=(15, 8))
+
+# Datos de entrenamiento (contexto) - tomados del df original
+ax.plot(series_unificadas[TARGET_COLUMN].loc[train_data.index[-400:]], label='Datos de Entrenamiento (Contexto)', color='silver', ls=':')
+
+# Datos de prueba (reales) y la predicción
+ax.plot(df_results.index, df_results['Reales'], label='Valor Real (Test)', color='cyan', ls='--', marker='o', markersize=4)
+ax.plot(df_results.index, df_results['Predichos'], label='Predicción Modelo', color='orange', ls='-')
+
+# Línea vertical de inicio de predicción
+ax.axvline(train_data.index[-1], color='blue', linestyle='--', label='Inicio de Predicción')
+
+# Configuración del gráfico
+ax.set_title('Predicción de cantidad_eventos con Fechas Corregidas', fontsize=16)
+ax.set_ylabel('Cantidad de eventos')
+ax.legend()
+ax.grid(alpha=0.3)
+plt.show()
+     
+```
+
+```{python}
+#| include: false
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+
+
+# --- 1. CONFIGURACIÓN ---
+TARGET_COLUMN = 'cantidad_eventos'
+FEATURES = [TARGET_COLUMN, 'Maxima', 'Minima', 'Media', '(mm)', 'mes', 'fin_de_semana', 'feriado', 'lluvia', 'intensidad', 'estacion']
+CATEGORICAL = ['mes', 'fin_de_semana', 'feriado', 'lluvia', 'intensidad', 'estacion']
+HORIZON = 20
+CONTEXT_WINDOW = 365
+
+# --- 2. DIVISIÓN ---
+split_index = int(len(series_unificadas) * 0.8)
+train_data = series_unificadas[:split_index].copy()
+test_data = series_unificadas[split_index:].copy()
+
+# --- 3. Codificar categóricas ANTES de escalar ---
+encoder = OrdinalEncoder()
+train_data[CATEGORICAL] = encoder.fit_transform(train_data[CATEGORICAL])
+test_data[CATEGORICAL] = encoder.transform(test_data[CATEGORICAL])
+
+# --- 4. Escalado SOLO CON NÚMEROS ---
+scaler = StandardScaler()
+scaler.fit(train_data[FEATURES])
+
+train_data[FEATURES] = scaler.transform(train_data[FEATURES])
+test_data[FEATURES] = scaler.transform(test_data[FEATURES])
+
+# --- 5. PREPARACIÓN DEL INPUT ---
+context_data = train_data[FEATURES][-CONTEXT_WINDOW:].to_numpy()
+model_inputs = context_data.T
+print(f"Forma de los datos de entrada: {model_inputs.shape}")
+
+# --- 6. SIMULACIÓN DE PREDICCIÓN (cambia esto por tu modelo real) ---
+point_forecast = np.random.randn(1, HORIZON)  # <--- Reemplaza por la predicción real
+
+# --- 7. Construcción robusta del DataFrame de resultados ---
+prediction_index = test_data.index[:HORIZON]
+
+predicted_scaled = np.zeros((len(point_forecast[0]), len(FEATURES)))
+predicted_scaled[:, 0] = point_forecast[0]
+predicted_unscaled = scaler.inverse_transform(predicted_scaled)
+predicted_values = predicted_unscaled[:, 0]
+
+real_values = series_unificadas.loc[prediction_index, TARGET_COLUMN]
+
+df_results = pd.DataFrame({
+    'Reales': real_values.values,
+    'Predichos': predicted_values
+}, index=prediction_index)
+
+
+     
+```
+
+```{python}
+#| label: fig-graf_su_last
+#| echo: false
+# --- 8. Gráfico ---
+
+fig, ax = plt.subplots(figsize=(15, 8))
+ax.plot(series_unificadas[TARGET_COLUMN].loc[train_data.index[-400:]], label='Datos de Entrenamiento (Contexto)', color='silver', ls=':')
+ax.plot(df_results.index, df_results['Reales'], label='Valor Real (Test)', color='cyan', ls='--', marker='o', markersize=4)
+ax.plot(df_results.index, df_results['Predichos'], label='Predicción Modelo', color='orange', ls='-')
+ax.axvline(train_data.index[-1], color='blue', linestyle='--', label='Inicio de Predicción')
+ax.set_title('Predicción de cantidad_eventos con Fechas Corregidas', fontsize=16)
+ax.set_ylabel('Cantidad de eventos')
+ax.legend()
+ax.grid(alpha=0.3)
+plt.show()
+```
+
+\newpage
+
+# Conclusiones
+
+## Hallazgos Principales
+
+\[Enumerar los hallazgos más importantes del análisis.\]
+
+## Limitaciones del Estudio
+
+\[Describir las limitaciones metodológicas o de datos encontradas.\]
+
+## Recomendaciones
+
+\[Proporcionar recomendaciones basadas en los resultados obtenidos.\]
+
+## Trabajos Futuros
+
+\[Sugerir líneas de investigación futuras o mejoras al análisis.\]
+
+\newpage
+
+# Referencias Bibliográficas {.unnumbered}
+
+Ansari, A. F., Stella, L., Turkmen, C., Zhang, X., Mercado, P., Shen, H., Shchur, O., Rangapuram, S. S., Arango, S. P., Kapoor, S., Zschiegner, J., Maddix, D. C., Wang, H., Mahoney, M. W., Torkkola, K., Wilson, A. G., Bohlke-Schneider, M., & Wang, Y. (2024). Chronos: Learning the language of time series. *arXiv preprint arXiv:2403.07815*.
+
+Brownlee, J. (2020). *XGBoost for Time Series Forecasting*. Machine Learning Mastery.
+
+Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. In *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining* (pp. 785-794). ACM. https://doi.org/10.1145/2939672.2939785
+
+Das, A., Kong, W., Leach, A., Sen, R., & Yu, R. (2024). A decoder-only foundation model for time-series forecasting. *arXiv preprint arXiv:2310.10688*.
+
+Feurer, M., Klein, A., Eggensperger, K., Springenberg, J., Blum, M., & Hutter, F. (2015). Efficient and robust automated machine learning. In *Advances in Neural Information Processing Systems* (Vol. 28, pp. 2962-2970).
+
+Hutter, F., Kotthoff, L., & Vanschoren, J. (Eds.). (2019). *Automated Machine Learning: Methods, Systems, Challenges*. Springer. https://doi.org/10.1007/978-3-030-05318-5
+
+Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting: Principles and Practice* (3rd ed.). OTexts. https://otexts.com/fpp3/
+
+Hyndman, R. J., & Koehler, A. B. (2006). Another look at measures of forecast accuracy. *International Journal of Forecasting*, 22(4), 679-688. https://doi.org/10.1016/j.ijforecast.2006.03.001
+
+**Fuentes de datos:**
+
+Gobierno de la Ciudad de Buenos Aires. (2024). *Victimas Siniestros Viales*. Datos Abiertos CABA. https://data.buenosaires.gob.ar/dataset/victimas-siniestros-viales
+
+Servicio Meteorológico Nacional. (2024). *Datos Meteorológicos Ciudad de Buenos Aires*. Comunicación personal. Centro de Información Meteorológica: cim\@smn.gob.ar
+
+\newpage
+
+# Apéndices {.unnumbered}
+
+## Apéndice A: Código Completo
+
+\[Incluir aquí código adicional que no fue incluido en el cuerpo principal del documento.\]
+
+```{python}
+#| label: codigo-adicional
+#| echo: true
+#| eval: false
+
+# Código auxiliar y funciones adicionales
+# [Agregar código según sea necesario]
+```
+
+## Apéndice B: Tablas y Gráficos Adicionales
+
+\[Incluir tablas y gráficos complementarios que apoyen el análisis pero que no son esenciales para el flujo principal del documento.\]
+
+## Apéndice C: Datos y Fuentes
+
+\[Describir las fuentes de datos utilizadas, procedimientos de recolección y cualquier transformación adicional realizada.\]
